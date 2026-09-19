@@ -196,9 +196,13 @@ function drawLines(){
 function drawGuide(stage,strong){ // the shape to follow: road, dots, or nothing
   const road=T.road;
   for(const s of T.it.cs){
-    if(s.dot){if(stage<2){const q=P(s);cx.beginPath();cx.arc(q.x,q.y,road*.45,0,7);cx.fillStyle=colors['--road'];cx.fill();}continue;}
+    if(s.dot){const q=P(s);cx.beginPath();cx.arc(q.x,q.y,road*.45,0,7);cx.fillStyle=colors['--road'];cx.fill();continue;}
     if(stage===0||strong){path(s.pts);strokeStyle(colors['--road-edge'],road+4);path(s.pts);strokeStyle(colors['--road'],road);}
-    else if(stage===1){for(let j=0;j<s.pts.length;j+=7){const q=P(s.pts[j]);cx.beginPath();cx.arc(q.x,q.y,Math.max(3.5,road*.11),0,7);cx.fillStyle=colors['--muted'];cx.fill();}}
+    else{ // dots on every copy; the last copies get fewer, lighter dots and no bee
+      const gap=stage===2?9:7,r=Math.max(3.5,road*(stage===2?.1:.11));
+      cx.save();if(stage===2)cx.globalAlpha*=.6;
+      for(let j=0;j<s.pts.length;j+=gap){const q=P(s.pts[j]);cx.beginPath();cx.arc(q.x,q.y,r,0,7);cx.fillStyle=colors['--muted'];cx.fill();}
+      cx.restore();}
   }
 }
 function drawDone(slot){

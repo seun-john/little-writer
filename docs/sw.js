@@ -1,6 +1,6 @@
 /* Keeps Little Writer working offline once it has been opened. build.py stamps VERSION,
    so a new build replaces the old copy the next time the app is opened online. */
-const VERSION = "lw-1d9ca659e1";
+const VERSION = "lw-2693d7ed7c";
 const CORE = ["./", "index.html", "content.js", "voice.js", "photos.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

@@ -376,7 +376,7 @@ const LETTER_STROKES={
   z:[{b:['sleep','slantL','sleep'],s:[L(30,50,70,50),L(70,50,30,90),L(30,90,70,90)]}]
 };
 const NUMBER_STROKES=[
-  [{b:['slantL','stand'],s:[L(36,28,54,10),L(54,10,54,90)]}],
+  [{b:['stand'],s:[L(50,10,50,90)]}],
   [{b:['curveR','sleep'],s:[A(50,32,20,20,-160,25),L(68.1,40.5,30,90),L(30,90,72,90)]}],
   [{b:['curveR','curveR'],s:[A(48,30,19,19,-155,90),A(48,69,21,21,-90,150)]}],
   [{b:['slantL','sleep'],s:[L(58,10,24,64),L(24,64,76,64)]},{b:['stand'],s:[L(58,10,58,90)]}],
@@ -385,7 +385,7 @@ const NUMBER_STROKES=[
   [{b:['sleep','slantL'],s:[L(28,10,72,10),L(72,10,40,90)]}],
   [{b:['circle'],s:[A(50,30,17,19,-90,-450)]},{b:['circle'],s:[A(50,69.5,21,20.5,-90,-450)]}],
   [{b:['circle'],s:[A(50,30,20,20,-30,-390)]},{b:['stand'],s:[L(70,30,70,90)]}],
-  [{b:['slantL','stand'],s:[L(16,28,32,10),L(32,10,32,90)]},{b:['circle'],s:[A(66,50,20,40,-90,-450)]}]
+  [{b:['stand'],s:[L(30,10,30,90)]},{b:['circle'],s:[A(66,50,20,40,-90,-450)]}]
 ];
 const NUMWORDS=['one','two','three','four','five','six','seven','eight','nine','ten'];
 
@@ -812,9 +812,13 @@ function drawLines(){
 function drawGuide(stage,strong){ // the shape to follow: road, dots, or nothing
   const road=T.road;
   for(const s of T.it.cs){
-    if(s.dot){if(stage<2){const q=P(s);cx.beginPath();cx.arc(q.x,q.y,road*.45,0,7);cx.fillStyle=colors['--road'];cx.fill();}continue;}
+    if(s.dot){const q=P(s);cx.beginPath();cx.arc(q.x,q.y,road*.45,0,7);cx.fillStyle=colors['--road'];cx.fill();continue;}
     if(stage===0||strong){path(s.pts);strokeStyle(colors['--road-edge'],road+4);path(s.pts);strokeStyle(colors['--road'],road);}
-    else if(stage===1){for(let j=0;j<s.pts.length;j+=7){const q=P(s.pts[j]);cx.beginPath();cx.arc(q.x,q.y,Math.max(3.5,road*.11),0,7);cx.fillStyle=colors['--muted'];cx.fill();}}
+    else{ // dots on every copy; the last copies get fewer, lighter dots and no bee
+      const gap=stage===2?9:7,r=Math.max(3.5,road*(stage===2?.1:.11));
+      cx.save();if(stage===2)cx.globalAlpha*=.6;
+      for(let j=0;j<s.pts.length;j+=gap){const q=P(s.pts[j]);cx.beginPath();cx.arc(q.x,q.y,r,0,7);cx.fillStyle=colors['--muted'];cx.fill();}
+      cx.restore();}
   }
 }
 function drawDone(slot){
