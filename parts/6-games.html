@@ -7,7 +7,7 @@ const numSVG=(k,c='currentColor',sw=11)=>glyphSVG(NUMS[k-1],c,sw);
 function shakeEl(b,cls='wrong'){b.classList.remove(cls);void b.offsetWidth;b.classList.add(cls);sfx.boop();}
 function roundWin(title,again){
   sfx.win();confetti(160);const sticker=award(1);
-  speak([praiseKey(),'star',sticker?'sticker':null]);
+  speak([praiseKey(),'star',sticker?'sticker':null],'next');
   setTimeout(()=>{showOverlay(`<div class="bigstars">${pic('Star')}</div><div class="big" style="font-size:48px">${title}</div>${stickerHTML(sticker)}
     <div class="row"><button class="round" id="gAgain" aria-label="Play again">${pic('Repeat button')}</button><button class="round" id="gHome" aria-label="Home">${pic('House')}</button></div>`);
     $('gAgain').onclick=again;$('gHome').onclick=goHome;},900);
@@ -31,11 +31,11 @@ function nextCount(){
   C.n=1+rint(C.max);C.counted=0;const thing=rnd(CONTENT.countThings);
   $('cBox').innerHTML=Array.from({length:C.n},()=>thingBtn(thing)).join('');
   $('cAns').innerHTML='';$('cPrompt').textContent='Tap each one to count!';
-  speak('count_tap');
+  speak('count_tap','next');
   makeCountable($('cBox'),C,()=>{if(C.counted===C.n)setTimeout(askCount,900);});
 }
 function askCount(){
-  if(!C)return;$('cPrompt').textContent='Which number?';speak(['which']);
+  if(!C)return;$('cPrompt').textContent='Which number?';speak(['which'],'next');
   $('cAns').innerHTML=numChoices(C.n).map(k=>`<button class="ans" data-n="${k}" style="color:var(--sky)" aria-label="${k}">${numSVG(k)}</button>`).join('');
   $('cAns').querySelectorAll('.ans').forEach(b=>b.onclick=()=>{
     if(!C)return;const k=+b.dataset.n;
@@ -71,7 +71,7 @@ async function nextMath(){
   makeCountable($('mBox'),M);
   $('mAns').innerHTML=numChoices(M.ans).map(k=>`<button class="ans" data-n="${k}" style="color:var(--sky)" aria-label="${k}">${numSVG(k)}</button>`).join('');
   $('mAns').querySelectorAll('.ans').forEach(btn=>btn.onclick=()=>answerMath(btn,tok));
-  speak(add?'altogether':'left');
+  speak(add?'altogether':'left','queue');
 }
 async function answerMath(btn,tok){
   if(!M||M.tok!==tok||M.done===tok)return;const k=+btn.dataset.n,add=M.mode==='add';
@@ -98,7 +98,7 @@ function nextAbc(){
   const others=shuffle(LETS.filter(x=>x!==it)).slice(0,2).map(x=>rnd(startWords(x)));
   const opts=shuffle([right,...others]);
   $('aPicks').innerHTML=opts.map((o,i)=>`<button class="pick" data-i="${i}" aria-label="${o.word}">${wordPic(o)}<small>${o.word}</small></button>`).join('');
-  speak('q_'+it.id);
+  speak('q_'+it.id,'next');
   $('aPicks').querySelectorAll('.pick').forEach(b=>b.onclick=()=>{
     if(!Ab)return;const o=opts[+b.dataset.i];
     if(o===Ab.right){b.classList.add('right');sfx.stroke();Ab.round++;$('aDots').innerHTML=dotsHTML(ROUNDS,Ab.round);
@@ -141,7 +141,7 @@ function nextPop(){
     el.style.transform=`translate(${b.x}px,${b.y}px)`;el.onclick=()=>hitBalloon(b);$('sky').appendChild(el);Pp.balloons.push(b);
   });
   $('pPrompt').textContent='Pop the '+(target.world==='numbers'?'number':'letter')+'!';
-  speak(findKey(target));
+  speak(findKey(target),'next');
 }
 function hitBalloon(b){
   if(!Pp||b.gone)return;
@@ -179,10 +179,11 @@ function openParent(){
     <label for="pVoice">Talking voice <input type="checkbox" id="pVoice" ${S.voice?'checked':''}></label>
     <label for="pPhon">Say letter sounds ("a says ah") <input type="checkbox" id="pPhon" ${S.phonics?'checked':''}></label>
     <label for="pReps">Rows to practise before the next one <select id="pReps">${[1,2,3].map(n=>`<option value="${n}" ${n===(S.reps||2)?'selected':''}>${n}</option>`).join('')}</select></label>
+    <label for="pDir">Any direction is OK (e.g. round a 0 either way) <input type="checkbox" id="pDir" ${S.anyDir!==false?'checked':''}></label>
     <label for="pSound">Sound effects <input type="checkbox" id="pSound" ${S.sound?'checked':''}></label>
     <p class="sub" style="text-align:left;font-size:15px">Stars: ${totalStars()} · Stickers: ${stickersOwned()}/${STICKERS.length}. Progress is saved on this phone.${window.CLIPS?'':' The recorded voice is still loading; the phone\'s own voice is used until then.'}</p>
     <div class="row" style="flex-wrap:wrap"><button class="textbtn" id="pLines">Hear every voice line</button><button class="textbtn" id="pCred">Photo credits</button><button class="textbtn danger" id="pReset">Reset progress</button><button class="textbtn" id="pDone" style="background:var(--leaf);color:#fff">Done</button></div></div>`);
-  const keep=()=>{S.name=$('pName').value.trim();S.voice=$('pVoice').checked;S.phonics=$('pPhon').checked;S.sound=$('pSound').checked;S.reps=+$('pReps').value;save();};
+  const keep=()=>{S.name=$('pName').value.trim();S.voice=$('pVoice').checked;S.phonics=$('pPhon').checked;S.sound=$('pSound').checked;S.reps=+$('pReps').value;S.anyDir=$('pDir').checked;save();};
   $('pDone').onclick=()=>{keep();goHome();};
   $('pLines').onclick=()=>{keep();openPhraseList();};
   $('pCred').onclick=()=>{keep();openCredits();};
@@ -205,7 +206,7 @@ function openPhraseList(){
 }
 
 /* the recorded voice is big, so it loads after the game is on screen */
-function loadVoice(){for(const f of ['photos.js','voice.js']){const s=document.createElement('script');s.src=f;s.async=true;document.body.appendChild(s);}}
+function loadVoice(){for(const f of ['photos.js','voice.js']){const s=document.createElement('script');s.src=f;s.async=true;if(f==='voice.js')s.onload=()=>{if(soundWoken)warmVoice();};document.body.appendChild(s);}}
 goHome();
 setTimeout(loadVoice,50);
 /* installed app: keep working offline (skipped where the page can't register one) */

@@ -165,25 +165,60 @@ const sfx={
   tick:()=>tone(1320,.06,'sine',.08)
 };
 
-/* ---------- voice: recorded clips (voice.js), falling back to the phone's own voice ---------- */
-const V={el:new Audio(),token:0};
-V.el.preload='auto';
+/* ---------- voice: recorded clips (voice.js) played through Web Audio, queued so lines finish ----------
+   speak(keys, mode):
+     'interrupt' (default) stop everything and say this now (a new screen, a tap on a button)
+     'next'      let the current line finish, drop anything waiting, then say this (moving on to the next step)
+     'queue'     say this after everything already waiting (a line that follows on)
+     'ifIdle'    only say this if nothing is talking (small reminders like "stay on the line")
+   Falls back to the phone's own voice if the clips have not loaded yet. */
+const V={token:0,src:null,end:null,busy:false,q:[],bufs:{}};
 const clipOK=k=>window.CLIPS&&CLIPS[k];
-function stopVoice(){V.token++;try{V.el.pause();}catch(e){}try{speechSynthesis.cancel();}catch(e){}}
-function speak(keys){
-  keys=[].concat(keys).filter(Boolean);stopVoice();
-  if(!S.voice||!keys.length)return Promise.resolve();
-  const tok=V.token;
-  if(keys.every(clipOK))return new Promise(res=>{
-    const next=i=>{ if(tok!==V.token||i>=keys.length)return res();
-      V.el.src=CLIPS[keys[i]];V.el.onended=()=>setTimeout(()=>next(i+1),80);V.el.onerror=V.el.onended;
-      V.el.play().catch(()=>res()); };
-    next(0);});
-  return ttsSay(keys.map(k=>PHRASES[k]||'').join(' '));
+function clipBuffer(k){
+  if(!V.bufs[k])V.bufs[k]=new Promise((res,rej)=>{
+    const c=ac();if(!c)return rej();
+    const b=atob(CLIPS[k].slice(CLIPS[k].indexOf(',')+1)),a=new Uint8Array(b.length);
+    for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
+    c.decodeAudioData(a.buffer,res,rej);
+  }).catch(()=>null);
+  return V.bufs[k];
 }
+function playBuffer(buf){return new Promise(res=>{
+  const c=ac(),src=c.createBufferSource();src.buffer=buf;src.connect(c.destination);
+  V.src=src;V.end=res;src.onended=()=>{if(V.src===src){V.src=null;V.end=null;}res();};src.start();});}
+function stopVoice(){
+  V.token++;V.q.splice(0).forEach(j=>j.done());
+  if(V.src){const s=V.src,e=V.end;V.src=null;V.end=null;try{s.onended=null;s.stop();}catch(_){}e&&e();}
+  try{speechSynthesis.cancel();}catch(_){}
+}
+function speak(keys,mode='interrupt'){
+  keys=[].concat(keys).filter(Boolean);
+  if(!S.voice||!keys.length)return Promise.resolve();
+  if(mode==='ifIdle'&&(V.busy||V.q.length))return Promise.resolve();
+  if(mode==='interrupt')stopVoice();
+  if(mode==='next')V.q.splice(0).forEach(j=>j.done());
+  return new Promise(done=>{V.q.push({keys,done});pumpVoice();});
+}
+async function pumpVoice(){
+  if(V.busy)return;const job=V.q.shift();if(!job)return;
+  V.busy=true;const tok=V.token;
+  try{
+    if(job.keys.every(clipOK)&&ac()){
+      for(const k of job.keys){
+        const buf=await clipBuffer(k);if(tok!==V.token)break;
+        if(buf)await playBuffer(buf);if(tok!==V.token)break;
+        await wait(60);
+      }
+    }else if(tok===V.token)await ttsSay(job.keys.map(k=>PHRASES[k]||'').join(' '));
+  }catch(_){}
+  V.busy=false;job.done();pumpVoice();
+}
+/* decode the most used lines in quiet moments so they start instantly */
+function warmVoice(){if(!window.CLIPS||!ac())return;const keys=Object.keys(CLIPS);let i=0;
+  const step=()=>{if(i>=keys.length)return;clipBuffer(keys[i++]).then(()=>setTimeout(step,15));};step();}
 let TTS_VOICE=null;
 function pickVoice(){if(!('speechSynthesis' in window))return;const v=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
-  TTS_VOICE=v.find(v=>/en-NG/i.test(v.lang))||v.find(v=>/natural|neural/i.test(v.name))||v.find(v=>/GB/i.test(v.lang))||v[0]||null;}
+  TTS_VOICE=v.find(v=>/GB/i.test(v.lang)&&/natural|neural|libby|sonia/i.test(v.name))||v.find(v=>/GB/i.test(v.lang))||v[0]||null;}
 if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 function ttsSay(text){return new Promise(res=>{
   if(!text||!('speechSynthesis' in window))return res();

@@ -58,7 +58,7 @@ async def one(key, text, sem):
     async with sem:
         for attempt in range(3):
             try:
-                await edge_tts.Communicate(text, C["voice"], rate=C["rate"], pitch="+4Hz").save(str(dest))
+                await edge_tts.Communicate(text, C["voice"], rate=C["rate"]).save(str(dest))
                 return
             except Exception as e:  # network hiccup: retry
                 if attempt == 2:

@@ -10,7 +10,11 @@ function show(id){
   hideOverlay();
 }
 /* first touch unlocks sound on phones */
-document.addEventListener('pointerdown',()=>{ac();try{V.el.muted=true;V.el.play().catch(()=>{}).finally(()=>{V.el.pause();V.el.muted=false;});}catch(e){}},{once:true});
+/* phones only allow sound after a touch: wake the sound system on every touch (a silent blip the first time) */
+let soundWoken=false;
+document.addEventListener('pointerdown',()=>{const c=ac();if(!c||soundWoken)return;soundWoken=true;
+  try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start();}catch(e){}
+  warmVoice();},true);
 document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>goHome());
 
 /* ---------- home ---------- */

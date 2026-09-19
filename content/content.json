@@ -1,6 +1,6 @@
 {
- "voice": "en-NG-EzinneNeural",
- "rate": "-12%",
+ "voice": "en-GB-LibbyNeural",
+ "rate": "-8%",
  "letters": {
   "a": {
    "sound": "ah",

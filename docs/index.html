@@ -485,25 +485,60 @@ const sfx={
   tick:()=>tone(1320,.06,'sine',.08)
 };
 
-/* ---------- voice: recorded clips (voice.js), falling back to the phone's own voice ---------- */
-const V={el:new Audio(),token:0};
-V.el.preload='auto';
+/* ---------- voice: recorded clips (voice.js) played through Web Audio, queued so lines finish ----------
+   speak(keys, mode):
+     'interrupt' (default) stop everything and say this now (a new screen, a tap on a button)
+     'next'      let the current line finish, drop anything waiting, then say this (moving on to the next step)
+     'queue'     say this after everything already waiting (a line that follows on)
+     'ifIdle'    only say this if nothing is talking (small reminders like "stay on the line")
+   Falls back to the phone's own voice if the clips have not loaded yet. */
+const V={token:0,src:null,end:null,busy:false,q:[],bufs:{}};
 const clipOK=k=>window.CLIPS&&CLIPS[k];
-function stopVoice(){V.token++;try{V.el.pause();}catch(e){}try{speechSynthesis.cancel();}catch(e){}}
-function speak(keys){
-  keys=[].concat(keys).filter(Boolean);stopVoice();
-  if(!S.voice||!keys.length)return Promise.resolve();
-  const tok=V.token;
-  if(keys.every(clipOK))return new Promise(res=>{
-    const next=i=>{ if(tok!==V.token||i>=keys.length)return res();
-      V.el.src=CLIPS[keys[i]];V.el.onended=()=>setTimeout(()=>next(i+1),80);V.el.onerror=V.el.onended;
-      V.el.play().catch(()=>res()); };
-    next(0);});
-  return ttsSay(keys.map(k=>PHRASES[k]||'').join(' '));
+function clipBuffer(k){
+  if(!V.bufs[k])V.bufs[k]=new Promise((res,rej)=>{
+    const c=ac();if(!c)return rej();
+    const b=atob(CLIPS[k].slice(CLIPS[k].indexOf(',')+1)),a=new Uint8Array(b.length);
+    for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
+    c.decodeAudioData(a.buffer,res,rej);
+  }).catch(()=>null);
+  return V.bufs[k];
 }
+function playBuffer(buf){return new Promise(res=>{
+  const c=ac(),src=c.createBufferSource();src.buffer=buf;src.connect(c.destination);
+  V.src=src;V.end=res;src.onended=()=>{if(V.src===src){V.src=null;V.end=null;}res();};src.start();});}
+function stopVoice(){
+  V.token++;V.q.splice(0).forEach(j=>j.done());
+  if(V.src){const s=V.src,e=V.end;V.src=null;V.end=null;try{s.onended=null;s.stop();}catch(_){}e&&e();}
+  try{speechSynthesis.cancel();}catch(_){}
+}
+function speak(keys,mode='interrupt'){
+  keys=[].concat(keys).filter(Boolean);
+  if(!S.voice||!keys.length)return Promise.resolve();
+  if(mode==='ifIdle'&&(V.busy||V.q.length))return Promise.resolve();
+  if(mode==='interrupt')stopVoice();
+  if(mode==='next')V.q.splice(0).forEach(j=>j.done());
+  return new Promise(done=>{V.q.push({keys,done});pumpVoice();});
+}
+async function pumpVoice(){
+  if(V.busy)return;const job=V.q.shift();if(!job)return;
+  V.busy=true;const tok=V.token;
+  try{
+    if(job.keys.every(clipOK)&&ac()){
+      for(const k of job.keys){
+        const buf=await clipBuffer(k);if(tok!==V.token)break;
+        if(buf)await playBuffer(buf);if(tok!==V.token)break;
+        await wait(60);
+      }
+    }else if(tok===V.token)await ttsSay(job.keys.map(k=>PHRASES[k]||'').join(' '));
+  }catch(_){}
+  V.busy=false;job.done();pumpVoice();
+}
+/* decode the most used lines in quiet moments so they start instantly */
+function warmVoice(){if(!window.CLIPS||!ac())return;const keys=Object.keys(CLIPS);let i=0;
+  const step=()=>{if(i>=keys.length)return;clipBuffer(keys[i++]).then(()=>setTimeout(step,15));};step();}
 let TTS_VOICE=null;
 function pickVoice(){if(!('speechSynthesis' in window))return;const v=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
-  TTS_VOICE=v.find(v=>/en-NG/i.test(v.lang))||v.find(v=>/natural|neural/i.test(v.name))||v.find(v=>/GB/i.test(v.lang))||v[0]||null;}
+  TTS_VOICE=v.find(v=>/GB/i.test(v.lang)&&/natural|neural|libby|sonia/i.test(v.name))||v.find(v=>/GB/i.test(v.lang))||v[0]||null;}
 if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 function ttsSay(text){return new Promise(res=>{
   if(!text||!('speechSynthesis' in window))return res();
@@ -525,7 +560,11 @@ function show(id){
   hideOverlay();
 }
 /* first touch unlocks sound on phones */
-document.addEventListener('pointerdown',()=>{ac();try{V.el.muted=true;V.el.play().catch(()=>{}).finally(()=>{V.el.pause();V.el.muted=false;});}catch(e){}},{once:true});
+/* phones only allow sound after a touch: wake the sound system on every touch (a silent blip the first time) */
+let soundWoken=false;
+document.addEventListener('pointerdown',()=>{const c=ac();if(!c||soundWoken)return;soundWoken=true;
+  try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start();}catch(e){}
+  warmVoice();},true);
 document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>goHome());
 
 /* ---------- home ---------- */
@@ -633,7 +672,7 @@ function planFor(level,n){const row=PLAN[Math.min(2,level)];
 /* level = guide level for this row; visit = rows already done in this sitting; fresh = new item (show the demo) */
 function startTrace(it,level=0,visit=0,fresh=true){
   show('trace');readColors();
-  T={it,level:Math.min(2,level),visit,fresh,n:0,slots:[],ci:0,si:0,p:0,active:null,last:null,demo:null,locked:true,lastStep:0,nudge:0,idle:performance.now()};
+  T={it,level:Math.min(2,level),visit,fresh,n:0,slots:[],ci:0,si:0,p:0,v:null,pv:[0,0],active:null,last:null,demo:null,locked:true,lastStep:0,nudge:0,idle:performance.now()};
   $('tStars').innerHTML=starStr(itemStars(it.id));
   fit();
   T.slots=planFor(T.level,T.n).map(stage=>({stage,done:[],ink:it.cs.map(()=>[]),finished:false}));fit();
@@ -645,10 +684,18 @@ function startTrace(it,level=0,visit=0,fresh=true){
 }
 const cur=()=>T.slots[T.ci];
 /* how far (in shape units) the finger may be from the line: about half the road, a bit more when writing alone */
-const tolFor=stage=>Math.max(20,T.road*[.62,.6,.72][stage])/T.sc;
-const offFor=stage=>tolFor(stage)*1.7;
+const tolFor=stage=>Math.max(22,T.road*[.72,.7,.8][stage])/T.sc;
+const offFor=stage=>tolFor(stage)*2;
+/* either direction is fine (unless a grown-up turns it off): v=0 the school's way, v=1 the other way.
+   For a circle both ways start at the same point, so the way is decided by where the finger goes first. */
+const ways=()=>S.anyDir===false?[0]:[0,1];
+function SP(v=T.v){const s=T.it.cs[T.si];if(v===1)return s.rev||(s.rev=s.pts.slice().reverse());return s.pts;}
+const isLoop=s=>dist(s.pts[0],s.pts[s.pts.length-1])<4;
 /* distance from a point to the current stroke, looking near where he has got to */
-function nearDist(q){const s=T.it.cs[T.si],a=Math.max(0,T.p-12),b=Math.min(s.pts.length-1,T.p+20);let d=1e9;for(let j=a;j<=b;j++)d=Math.min(d,dist(q,s.pts[j]));return d;}
+function nearDist(q){let d=1e9;
+  for(const v of T.v===null?ways():[T.v]){const pts=SP(v),p=T.v===null?T.pv[v]:T.p,a=Math.max(0,p-12),b=Math.min(pts.length-1,p+20);
+    for(let j=a;j<=b;j++)d=Math.min(d,dist(q,pts[j]));}
+  return d;}
 function renderChips(){
   if(!T)return;const all=[];T.it.cs.forEach((s,si)=>s.b.forEach(k=>all.push({k,si})));
   $('chips').innerHTML=all.map(c=>`<button class="chip ${c.si===T.si&&!T.locked?'on':''} ${c.si<T.si?'done':''}" data-k="${c.k}" aria-label="${BLOCKS[c.k].name}">${blockIcon(c.k)}<span class="cname">${BLOCKS[c.k].name}</span></button>`).join('');
@@ -672,10 +719,10 @@ const P=p=>({x:SL.ox+p.x*T.sc,y:SL.oy+p.y*T.sc});
 
 function playDemo(){
   if(!T)return;T.locked=true;T.demo={i:0,t0:performance.now()};renderChips();
-  speak(strokeWords(T.it.cs[0]));
+  speak(strokeWords(T.it.cs[0]),'queue');
 }
-function resetCopy(){const s=cur();s.done=[];s.ink=T.it.cs.map(()=>[]);T.si=0;T.p=0;T.active=null;T.lastStep=0;}
-$('tWatch').onclick=()=>{if(!T||T.demo||!cur())return;resetCopy();playDemo();};
+function resetCopy(){const s=cur();s.done=[];s.ink=T.it.cs.map(()=>[]);T.si=0;T.p=0;T.v=null;T.pv=[0,0];T.active=null;T.lastStep=0;}
+$('tWatch').onclick=()=>{if(!T||T.demo||!cur())return;resetCopy();stopVoice();speak('watch');playDemo();};
 /* eraser: rub out the copy he is working on and start it again */
 $('tErase').onclick=()=>{if(!T||T.demo||!cur())return;resetCopy();T.locked=false;renderChips();T.idle=performance.now();
   sfx.tick();speak(['erase',...strokeWords(T.it.cs[0])]);};
@@ -687,7 +734,7 @@ function stepDemo(now){
   if(k>=1){
     d.i++;d.t0=now+300;
     if(d.i>=T.it.cs.length){T.demo=null;setTimeout(beginTracing,400);}
-    else speak(strokeWords(T.it.cs[d.i]));
+    else speak(strokeWords(T.it.cs[d.i]),'queue');
   }
   return k;
 }
@@ -695,7 +742,7 @@ function stepDemo(now){
 function strokeWords(s){if(s.tip)return[s.tip];const out=[];s.b.forEach((k,i)=>{if(i)out.push('then');out.push(BLOCKS[k].key);});return out;}
 function beginTracing(){
   if(!T)return;resetCopy();T.locked=false;renderChips();T.idle=performance.now();
-  speak([S.seen<3?'turn_first':'turn',...strokeWords(T.it.cs[0])]);S.seen++;save();
+  speak([S.seen<3?'turn_first':'turn',...strokeWords(T.it.cs[0])],'queue');S.seen++;save();
 }
 
 /* input */
@@ -704,9 +751,17 @@ cv.addEventListener('pointerdown',e=>{
   e.preventDefault();ac();if(!T||T.locked||T.active!==null||!cur())return;
   const u=toUnits(e),s=T.it.cs[T.si];T.idle=performance.now();
   if(s.dot){ if(dist(u,s)<tolFor(cur().stage)*1.5){cur().ink[T.si].push([u]);completeStroke();} else nudge(); return; }
-  const here=s.pts[T.p];
-  if(dist(u,here)<=tolFor(cur().stage)*1.5){T.active=e.pointerId;T.last=u;try{cv.setPointerCapture(e.pointerId);}catch(_){}cur().ink[T.si].push([u]);advance(u);}
-  else nudge();
+  const tol=tolFor(cur().stage)*1.5;
+  if(T.v===null){ // not started yet: either end is fine
+    const ok=ways().filter(v=>dist(u,SP(v)[0])<=tol).sort((a,b)=>dist(u,SP(a)[0])-dist(u,SP(b)[0]));
+    if(!ok.length)return nudge();
+    T.pv=[0,0];if(!isLoop(s)||ok.length===1)T.v=ok[0];
+  }else{ // carrying on after lifting his finger: anywhere a little further along is fine
+    const pts=SP();let best=-1,bd=1e9;
+    for(let j=T.p;j<=Math.min(pts.length-1,T.p+18);j++){const d=dist(u,pts[j]);if(d<=tol&&d<bd){bd=d;best=j;}}
+    if(best<0)return nudge();T.p=best;
+  }
+  T.active=e.pointerId;T.last=u;try{cv.setPointerCapture(e.pointerId);}catch(_){}cur().ink[T.si].push([u]);advance(u);
 });
 cv.addEventListener('pointermove',e=>{
   if(!T||e.pointerId!==T.active)return;
@@ -724,12 +779,19 @@ const endPtr=e=>{if(T&&e.pointerId===T.active){T.active=null;if(!T.locked&&nearE
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
 
 /* close enough to the end of the stroke to count it (a small child often stops just short) */
-function nearEnd(){const s=T.it.cs[T.si];return s&&!s.dot&&T.p>=s.pts.length-1-Math.max(3,tolFor(cur().stage)*.6);}
+function nearEnd(){const s=T.it.cs[T.si];return s&&!s.dot&&T.v!==null&&T.p>=s.pts.length-1-Math.max(3,tolFor(cur().stage)*.6);}
+function stepAlong(pts,from,q,tol){let best=-1,bd=1e9;
+  for(let j=from;j<=Math.min(pts.length-1,from+12);j++){const d=dist(q,pts[j]);if(d<tol&&d<bd){bd=d;best=j;}}
+  return best;}
 function advance(q){
   const s=T.it.cs[T.si];if(!s||s.dot)return;
-  const tol=tolFor(cur().stage),end=Math.min(s.pts.length-1,T.p+12);
-  let best=-1,bd=1e9;
-  for(let j=T.p;j<=end;j++){const d=dist(q,s.pts[j]);if(d<tol&&d<bd){bd=d;best=j;}}
+  const tol=tolFor(cur().stage);
+  if(T.v===null){ // round a circle: follow both ways until the finger clearly picks one
+    for(const v of ways()){const b=stepAlong(SP(v),T.pv[v],q,tol);if(b>T.pv[v])T.pv[v]=b;}
+    const v=ways().filter(v=>T.pv[v]>6).sort((a,b)=>T.pv[b]-T.pv[a])[0];
+    if(v===undefined)return;T.v=v;T.p=T.pv[v];
+  }
+  const best=stepAlong(SP(),T.p,q,tol);
   if(best>T.p){
     T.p=best;const frac=T.p/(s.pts.length-1),stepI=Math.floor(frac*10);
     if(stepI>T.lastStep){T.lastStep=stepI;sfx.step(stepI);}
@@ -738,16 +800,16 @@ function advance(q){
 }
 /* finger wandered off the line: stop, wobble, and let him carry on from where he left it */
 function offTrack(){T.active=null;T.nudge=performance.now();sfx.boop();
-  if(performance.now()-(T.lastNudgeSay||0)>2500){T.lastNudgeSay=performance.now();speak('offtrack');}}
+  if(performance.now()-(T.lastNudgeSay||0)>2500){T.lastNudgeSay=performance.now();speak('offtrack','ifIdle');}}
 function nudge(){T.nudge=performance.now();sfx.boop();
-  if(performance.now()-(T.lastNudgeSay||0)>4000){T.lastNudgeSay=performance.now();speak(T.it.cs[T.si].dot?'tapdot':'green');}}
+  if(performance.now()-(T.lastNudgeSay||0)>4000){T.lastNudgeSay=performance.now();speak(T.it.cs[T.si].dot?'tapdot':'green','ifIdle');}}
 function completeStroke(){
   const slot=cur();slot.done.push(T.si);T.active=null;T.lastStep=0;
-  if(T.si+1<T.it.cs.length){sfx.stroke();T.si++;T.p=0;renderChips();speak(strokeWords(T.it.cs[T.si]));return;}
-  slot.finished=true;T.si=0;T.p=0;
+  if(T.si+1<T.it.cs.length){sfx.stroke();T.si++;T.p=0;T.v=null;renderChips();speak(strokeWords(T.it.cs[T.si]),'next');return;}
+  slot.finished=true;T.si=0;T.p=0;T.v=null;
   if(T.ci+1<T.slots.length){ // on to the next copy in the row
     sfx.win();T.ci++;renderChips();T.idle=performance.now();
-    speak([praiseKey(),...strokeWords(T.it.cs[0])]);return;}
+    speak([praiseKey(),...strokeWords(T.it.cs[0])],'next');return;}
   T.ci=T.slots.length;T.locked=true;renderChips();finishRow();
 }
 const pickWord=it=>it.words.length?rnd(it.words):null;
@@ -760,7 +822,7 @@ function finishRow(){
   if(word){keys.push(word.key);if(S.phonics)keys.push('snd_'+it.id);}
   else if(it.world==='lines'&&it.id!=='cross')keys.push(BLOCKS[it.cs[0].b[0]].key);
   if(sticker)keys.push('sticker');
-  speak(keys);
+  speak(keys,'next');
   setTimeout(()=>{ if(!T||T.it!==it)return; rewardCard(it,level,visit,sticker,word); },1100);
 }
 function wordHTML(word,l){const i=word.indexOf(l);return i<0?word:`${word.slice(0,i)}<em>${l}</em>${word.slice(i+1)}`;}
@@ -776,9 +838,9 @@ function rewardCard(it,level,visit,sticker,word){
   let mid='',extra=0;
   if(it.world==='numbers'){const thing=CONTENT.countThings[(it.n-1)%CONTENT.countThings.length];
     mid=`<div class="pics" id="rPics"></div>`;extra=3100+it.n*850;
-    (async()=>{await wait(1800);let box=$('rPics');if(!box)return;speak('count_them');await wait(1300);
+    (async()=>{await wait(1800);let box=$('rPics');if(!box)return;speak('count_them','queue');await wait(1300);
       for(let k=1;k<=it.n;k++){box=$('rPics');if(!box||$('ov').hidden)return;
-        box.insertAdjacentHTML('beforeend',`<span>${pic(thing)}</span>`);sfx.step(k);speak('n_'+k);await wait(850);}})();}
+        box.insertAdjacentHTML('beforeend',`<span>${pic(thing)}</span>`);sfx.step(k);speak('n_'+k,'queue');await wait(850);}})();}
   else if(word){mid=`<div class="pics">${wordPic(word)}</div><div class="word">${wordHTML(word.word,it.id)}</div>`;extra=1500;}
   else mid=`<div class="word">${it.say}</div>`;
   showOverlay(`<div class="bigstars">${starStr(stars)}</div>
@@ -851,7 +913,7 @@ function drawCurrent(slot,now){
   drawDone(slot);
   const s=cs[T.si];if(!s)return;
   if(s.dot){const q=P(s),pulse=1+.15*Math.sin(now/180);cx.beginPath();cx.arc(q.x,q.y,road*.45*pulse,0,7);cx.fillStyle=colors['--leaf'];cx.fill();return;}
-  const pts=s.pts,n=pts.length;
+  const pts=SP(T.v===null?0:T.v),n=pts.length;
   if(stage===0){ // chevrons showing direction
     for(let j=14;j<n-10;j+=22){const a=P(pts[j]),b=P(pts[Math.min(n-1,j+2)]),ang=Math.atan2(b.y-a.y,b.x-a.x),r=road*.18;
       cx.save();cx.translate(a.x,a.y);cx.rotate(ang);cx.beginPath();cx.moveTo(r,0);cx.lineTo(-r,-r);cx.lineTo(-r*.3,0);cx.lineTo(-r,r);cx.closePath();cx.fillStyle=colors['--road-edge'];cx.fill();cx.restore();}
@@ -877,7 +939,7 @@ const numSVG=(k,c='currentColor',sw=11)=>glyphSVG(NUMS[k-1],c,sw);
 function shakeEl(b,cls='wrong'){b.classList.remove(cls);void b.offsetWidth;b.classList.add(cls);sfx.boop();}
 function roundWin(title,again){
   sfx.win();confetti(160);const sticker=award(1);
-  speak([praiseKey(),'star',sticker?'sticker':null]);
+  speak([praiseKey(),'star',sticker?'sticker':null],'next');
   setTimeout(()=>{showOverlay(`<div class="bigstars">${pic('Star')}</div><div class="big" style="font-size:48px">${title}</div>${stickerHTML(sticker)}
     <div class="row"><button class="round" id="gAgain" aria-label="Play again">${pic('Repeat button')}</button><button class="round" id="gHome" aria-label="Home">${pic('House')}</button></div>`);
     $('gAgain').onclick=again;$('gHome').onclick=goHome;},900);
@@ -901,11 +963,11 @@ function nextCount(){
   C.n=1+rint(C.max);C.counted=0;const thing=rnd(CONTENT.countThings);
   $('cBox').innerHTML=Array.from({length:C.n},()=>thingBtn(thing)).join('');
   $('cAns').innerHTML='';$('cPrompt').textContent='Tap each one to count!';
-  speak('count_tap');
+  speak('count_tap','next');
   makeCountable($('cBox'),C,()=>{if(C.counted===C.n)setTimeout(askCount,900);});
 }
 function askCount(){
-  if(!C)return;$('cPrompt').textContent='Which number?';speak(['which']);
+  if(!C)return;$('cPrompt').textContent='Which number?';speak(['which'],'next');
   $('cAns').innerHTML=numChoices(C.n).map(k=>`<button class="ans" data-n="${k}" style="color:var(--sky)" aria-label="${k}">${numSVG(k)}</button>`).join('');
   $('cAns').querySelectorAll('.ans').forEach(b=>b.onclick=()=>{
     if(!C)return;const k=+b.dataset.n;
@@ -941,7 +1003,7 @@ async function nextMath(){
   makeCountable($('mBox'),M);
   $('mAns').innerHTML=numChoices(M.ans).map(k=>`<button class="ans" data-n="${k}" style="color:var(--sky)" aria-label="${k}">${numSVG(k)}</button>`).join('');
   $('mAns').querySelectorAll('.ans').forEach(btn=>btn.onclick=()=>answerMath(btn,tok));
-  speak(add?'altogether':'left');
+  speak(add?'altogether':'left','queue');
 }
 async function answerMath(btn,tok){
   if(!M||M.tok!==tok||M.done===tok)return;const k=+btn.dataset.n,add=M.mode==='add';
@@ -968,7 +1030,7 @@ function nextAbc(){
   const others=shuffle(LETS.filter(x=>x!==it)).slice(0,2).map(x=>rnd(startWords(x)));
   const opts=shuffle([right,...others]);
   $('aPicks').innerHTML=opts.map((o,i)=>`<button class="pick" data-i="${i}" aria-label="${o.word}">${wordPic(o)}<small>${o.word}</small></button>`).join('');
-  speak('q_'+it.id);
+  speak('q_'+it.id,'next');
   $('aPicks').querySelectorAll('.pick').forEach(b=>b.onclick=()=>{
     if(!Ab)return;const o=opts[+b.dataset.i];
     if(o===Ab.right){b.classList.add('right');sfx.stroke();Ab.round++;$('aDots').innerHTML=dotsHTML(ROUNDS,Ab.round);
@@ -1011,7 +1073,7 @@ function nextPop(){
     el.style.transform=`translate(${b.x}px,${b.y}px)`;el.onclick=()=>hitBalloon(b);$('sky').appendChild(el);Pp.balloons.push(b);
   });
   $('pPrompt').textContent='Pop the '+(target.world==='numbers'?'number':'letter')+'!';
-  speak(findKey(target));
+  speak(findKey(target),'next');
 }
 function hitBalloon(b){
   if(!Pp||b.gone)return;
@@ -1049,10 +1111,11 @@ function openParent(){
     <label for="pVoice">Talking voice <input type="checkbox" id="pVoice" ${S.voice?'checked':''}></label>
     <label for="pPhon">Say letter sounds ("a says ah") <input type="checkbox" id="pPhon" ${S.phonics?'checked':''}></label>
     <label for="pReps">Rows to practise before the next one <select id="pReps">${[1,2,3].map(n=>`<option value="${n}" ${n===(S.reps||2)?'selected':''}>${n}</option>`).join('')}</select></label>
+    <label for="pDir">Any direction is OK (e.g. round a 0 either way) <input type="checkbox" id="pDir" ${S.anyDir!==false?'checked':''}></label>
     <label for="pSound">Sound effects <input type="checkbox" id="pSound" ${S.sound?'checked':''}></label>
     <p class="sub" style="text-align:left;font-size:15px">Stars: ${totalStars()} · Stickers: ${stickersOwned()}/${STICKERS.length}. Progress is saved on this phone.${window.CLIPS?'':' The recorded voice is still loading; the phone\'s own voice is used until then.'}</p>
     <div class="row" style="flex-wrap:wrap"><button class="textbtn" id="pLines">Hear every voice line</button><button class="textbtn" id="pCred">Photo credits</button><button class="textbtn danger" id="pReset">Reset progress</button><button class="textbtn" id="pDone" style="background:var(--leaf);color:#fff">Done</button></div></div>`);
-  const keep=()=>{S.name=$('pName').value.trim();S.voice=$('pVoice').checked;S.phonics=$('pPhon').checked;S.sound=$('pSound').checked;S.reps=+$('pReps').value;save();};
+  const keep=()=>{S.name=$('pName').value.trim();S.voice=$('pVoice').checked;S.phonics=$('pPhon').checked;S.sound=$('pSound').checked;S.reps=+$('pReps').value;S.anyDir=$('pDir').checked;save();};
   $('pDone').onclick=()=>{keep();goHome();};
   $('pLines').onclick=()=>{keep();openPhraseList();};
   $('pCred').onclick=()=>{keep();openCredits();};
@@ -1075,7 +1138,7 @@ function openPhraseList(){
 }
 
 /* the recorded voice is big, so it loads after the game is on screen */
-function loadVoice(){for(const f of ['photos.js','voice.js']){const s=document.createElement('script');s.src=f;s.async=true;document.body.appendChild(s);}}
+function loadVoice(){for(const f of ['photos.js','voice.js']){const s=document.createElement('script');s.src=f;s.async=true;if(f==='voice.js')s.onload=()=>{if(soundWoken)warmVoice();};document.body.appendChild(s);}}
 goHome();
 setTimeout(loadVoice,50);
 /* installed app: keep working offline (skipped where the page can't register one) */
