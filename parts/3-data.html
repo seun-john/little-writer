@@ -1,0 +1,193 @@
+
+<script src="content.js"></script>
+<script>
+/* content.js (built by build.py) provides CONTENT (words, picture names), PHRASES (voice line texts) and PICS (pictures). */
+window.CONTENT=window.CONTENT||{letters:{},numbers:[],countThings:[],stickers:[],buddies:[]};
+window.PHRASES=window.PHRASES||{};window.PICS=window.PICS||{};
+
+/* ---------- building blocks: words shown on the chips and the voice line for each ---------- */
+const BLOCKS = {
+  stand:  {name:'stroke', key:'b_stand',  icon:'M12 3V21'},
+  sleep:  {name:'dash', key:'b_sleep',  icon:'M3 12H21'},
+  slantL: {name:'slanted stroke', key:'b_slant',  icon:'M17 3L7 21'},
+  slantR: {name:'slanted stroke', key:'b_slant',  icon:'M7 3L17 21'},
+  curveL: {name:'curve',         key:'b_curve',  icon:'M17 4A9 9 0 0 0 17 20'},
+  curveR: {name:'curve',         key:'b_curve',  icon:'M7 4A9 9 0 0 1 7 20'},
+  cup:    {name:'curve',         key:'b_curve',  icon:'M5 3V12A7 7 0 0 0 19 12V3'},
+  circle: {name:'circle',        key:'b_circle', icon:'M12 4A8 8 0 1 0 12.01 4'},
+  hook:   {name:'hook',          key:'b_hook',   icon:'M15 3V14A5 5 0 0 1 5 16'},
+  hump:   {name:'hump',          key:'b_hump',   icon:'M5 21V12A7 7 0 0 1 19 12V21'},
+  dot:    {name:'dot',           key:'b_dot',    icon:'M12 12h.01'}
+};
+
+/* ---------- stroke shapes: lines L(x1,y1,x2,y2) and arcs A(cx,cy,rx,ry,fromDeg,toDeg) ---------- */
+const L=(x1,y1,x2,y2)=>({t:'L',x1,y1,x2,y2});
+const A=(cx,cy,rx,ry,a0,a1)=>({t:'A',cx,cy,rx,ry,a0,a1});
+const SQ={w:100,h:100,lines:[]};
+const NUM={w:100,h:100,lines:[[10,'r'],[50,'d'],[90,'r']]};
+const LET={w:100,h:135,lines:[[10,'b'],[50,'d'],[90,'r'],[125,'b']]};
+
+const LETTER_STROKES={
+  a:[{b:['circle'],s:[A(50,70,20,20,-30,-390)]},{b:['stand'],s:[L(70,50,70,90)]}],
+  b:[{b:['stand'],s:[L(30,10,30,90)]},{b:['circle'],s:[A(50,70,20,20,180,540)]}],
+  c:[{b:['curveL'],s:[A(52,70,20,20,-45,-315)]}],
+  d:[{b:['circle'],s:[A(48,70,20,20,-30,-390)]},{b:['stand'],s:[L(68,10,68,90)]}],
+  e:[{b:['sleep','curveL'],s:[L(30,70,70,70),A(50,70,20,20,0,-315)]}],
+  f:[{b:['curveL','stand'],s:[A(52,26,15,16,-15,-180),L(37,26,37,90)]},{b:['sleep'],s:[L(22,50,58,50)]}],
+  g:[{b:['circle'],s:[A(50,70,20,20,-30,-390)]},{b:['stand','hook'],s:[L(70,50,70,110),A(55,110,15,15,0,165)]}],
+  h:[{b:['stand'],s:[L(30,10,30,90)]},{b:['hump'],s:[A(50,70,20,20,180,360),L(70,70,70,90)]}],
+  i:[{b:['stand'],s:[L(50,50,50,90)]},{b:['dot'],dot:{x:50,y:30}}],
+  j:[{b:['stand','hook'],s:[L(56,50,56,110),A(41,110,15,15,0,165)]},{b:['dot'],dot:{x:56,y:30}}],
+  k:[{b:['stand'],s:[L(30,10,30,90)]},{b:['slantL','slantR'],s:[L(68,50,32,72),L(32,72,70,90)]}],
+  l:[{b:['stand'],s:[L(50,10,50,90)]}],
+  m:[{b:['stand'],s:[L(22,50,22,90)]},{b:['hump'],s:[A(36,66,14,16,180,360),L(50,66,50,90)]},{b:['hump'],s:[A(64,66,14,16,180,360),L(78,66,78,90)]}],
+  n:[{b:['stand'],s:[L(30,50,30,90)]},{b:['hump'],s:[A(50,68,20,18,180,360),L(70,68,70,90)]}],
+  o:[{b:['circle'],s:[A(50,70,20,20,-90,-450)]}],
+  p:[{b:['stand'],s:[L(30,50,30,125)]},{b:['circle'],s:[A(50,70,20,20,180,540)]}],
+  q:[{b:['circle'],s:[A(50,70,20,20,-30,-390)]},{b:['stand'],s:[L(70,50,70,125)]}],
+  r:[{b:['stand'],s:[L(32,50,32,90)]},{b:['curveR'],s:[A(50,68,18,16,180,320)]}],
+  s:[{b:['curveL','curveR'],s:[A(50,60,14,10,-40,-270),A(50,80,14,10,-90,140)]}],
+  t:[{b:['stand'],s:[L(45,20,45,90)]},{b:['sleep'],s:[L(28,50,64,50)]}],
+  u:[{b:['cup'],s:[L(30,50,30,70),A(50,70,20,20,180,0),L(70,70,70,50)]},{b:['stand'],s:[L(70,50,70,90)]}],
+  v:[{b:['slantR','slantL'],s:[L(28,50,50,90),L(50,90,72,50)]}],
+  w:[{b:['slantR','slantL','slantR','slantL'],s:[L(16,50,31,90),L(31,90,50,60),L(50,60,69,90),L(69,90,84,50)]}],
+  x:[{b:['slantR'],s:[L(30,50,70,90)]},{b:['slantL'],s:[L(70,50,30,90)]}],
+  y:[{b:['slantR'],s:[L(30,50,50,88)]},{b:['slantL'],s:[L(70,50,34,125)]}],
+  z:[{b:['sleep','slantL','sleep'],s:[L(30,50,70,50),L(70,50,30,90),L(30,90,70,90)]}]
+};
+const NUMBER_STROKES=[
+  [{b:['slantL','stand'],s:[L(36,28,54,10),L(54,10,54,90)]}],
+  [{b:['curveR','sleep'],s:[A(50,32,20,20,-160,25),L(68.1,40.5,30,90),L(30,90,72,90)]}],
+  [{b:['curveR','curveR'],s:[A(48,30,19,19,-155,90),A(48,69,21,21,-90,150)]}],
+  [{b:['slantL','sleep'],s:[L(58,10,24,64),L(24,64,76,64)]},{b:['stand'],s:[L(58,10,58,90)]}],
+  [{b:['stand','curveR'],s:[L(33,10,32,50),A(47,65,21,21,-135,150)]},{b:['sleep'],s:[L(33,10,70,10)]}],
+  [{b:['curveL','circle'],s:[A(54,62,24,52,-65,-180),A(50,70,20,20,180,-180)]}],
+  [{b:['sleep','slantL'],s:[L(28,10,72,10),L(72,10,40,90)]}],
+  [{b:['circle'],s:[A(50,30,17,19,-90,-450)]},{b:['circle'],s:[A(50,69.5,21,20.5,-90,-450)]}],
+  [{b:['circle'],s:[A(50,30,20,20,-30,-390)]},{b:['stand'],s:[L(70,30,70,90)]}],
+  [{b:['slantL','stand'],s:[L(16,28,32,10),L(32,10,32,90)]},{b:['circle'],s:[A(66,50,20,40,-90,-450)]}]
+];
+const NUMWORDS=['one','two','three','four','five','six','seven','eight','nine','ten'];
+
+const WORLDS = {
+  lines:{title:'Lines', color:'--grape', box:SQ, items:[
+    {id:'stand', say:'stroke', intro:'ln_stand', strokes:[{b:['stand'],s:[L(50,12,50,88)],tip:'tip_top'}]},
+    {id:'sleep', say:'dash', intro:'ln_sleep', strokes:[{b:['sleep'],s:[L(12,50,88,50)],tip:'tip_left'}]},
+    {id:'slantL',say:'slanted stroke', intro:'ln_slant', strokes:[{b:['slantL'],s:[L(68,12,32,88)],tip:'tip_slide'}]},
+    {id:'slantR',say:'slanted stroke', intro:'ln_slant', strokes:[{b:['slantR'],s:[L(32,12,68,88)],tip:'tip_slide'}]},
+    {id:'curveL',say:'curve',         intro:'ln_curve', strokes:[{b:['curveL'],s:[A(62,50,28,38,-80,-280)]}]},
+    {id:'curveR',say:'curve',         intro:'ln_curve', strokes:[{b:['curveR'],s:[A(38,50,28,38,-100,100)]}]},
+    {id:'circle',say:'circle',        intro:'ln_circle',strokes:[{b:['circle'],s:[A(50,50,36,36,-90,-450)],tip:'tip_round'}]},
+    {id:'cross', say:'cross',         intro:'ln_cross', strokes:[{b:['stand'],s:[L(50,12,50,88)]},{b:['sleep'],s:[L(12,50,88,50)]}]},
+  ]},
+  numbers:{title:'Numbers', color:'--sky', box:NUM,
+    items:NUMBER_STROKES.map((strokes,i)=>({id:String(i+1),n:i+1,say:NUMWORDS[i],intro:'wrn_'+(i+1),strokes}))},
+  letters:{title:'Letters', color:'--coral', box:LET,
+    items:Object.keys(LETTER_STROKES).map(l=>({id:l,say:'the letter '+l.toUpperCase(),intro:'wr_'+l,strokes:LETTER_STROKES[l],
+      words:((CONTENT.letters[l]||{}).words||[]).map((w,i)=>({word:w[0],pic:w[1],end:!!w[2],key:`is_${l}_${i}`}))}))}
+};
+const STAGES=['Trace the road','Follow the dots','All by myself'];
+const INK=['#ff6b4a','#3b8df0','#2bb673','#8a5cf0'];
+/* praise alternates: "Good job!" then "Great job!" */
+let praiseFlip=0;
+
+/* ---------- geometry ---------- */
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function rawPoints(segs){
+  const pts=[];
+  for(const s of segs){
+    if(s.t==='L'){const n=Math.max(1,Math.ceil(Math.hypot(s.x2-s.x1,s.y2-s.y1)));
+      for(let i=0;i<=n;i++)pts.push({x:s.x1+(s.x2-s.x1)*i/n,y:s.y1+(s.y2-s.y1)*i/n});}
+    else{const n=Math.max(8,Math.ceil(Math.abs(s.a1-s.a0)*Math.PI/180*Math.max(s.rx,s.ry)));
+      for(let i=0;i<=n;i++){const a=(s.a0+(s.a1-s.a0)*i/n)*Math.PI/180;pts.push({x:s.cx+s.rx*Math.cos(a),y:s.cy+s.ry*Math.sin(a)});}}
+  }
+  return pts;
+}
+function resample(raw,step=1){
+  const out=[raw[0]];let prev=raw[0],acc=0;
+  for(let i=1;i<raw.length;i++){
+    let a=prev,b=raw[i],d=dist(a,b);
+    while(d>0&&acc+d>=step){const t=(step-acc)/d;const q={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};out.push(q);a=q;d=dist(a,b);acc=0;}
+    acc+=d;prev=b;
+  }
+  const last=raw[raw.length-1];if(dist(out[out.length-1],last)>.3)out.push(last);
+  return out;
+}
+for(const [wk,w] of Object.entries(WORLDS)) for(const it of w.items){
+  it.world=wk; it.box=w.box;
+  it.cs=it.strokes.map(s=>s.dot?{dot:true,x:s.dot.x,y:s.dot.y,b:s.b}:{pts:resample(rawPoints(s.s)),b:s.b,tip:s.tip});
+}
+const ALL_ITEMS=Object.values(WORLDS).flatMap(w=>w.items);
+const findItem=id=>ALL_ITEMS.find(i=>i.id===id);
+const NUMS=WORLDS.numbers.items,LETS=WORLDS.letters.items;
+
+function glyphSVG(it,color='currentColor',sw=9){
+  const b=it.box;
+  const body=it.cs.map(s=>s.dot?`<circle cx="${s.x}" cy="${s.y}" r="${sw*.7}" fill="${color}"/>`
+    :`<polyline points="${s.pts.filter((_,i)=>i%2===0||i===s.pts.length-1).map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+  return `<svg viewBox="0 0 ${b.w} ${b.h}" aria-label="${it.id}" role="img">${body}</svg>`;
+}
+const blockIcon=k=>`<svg viewBox="0 0 24 24"><path d="${BLOCKS[k].icon}" fill="none" stroke="currentColor" stroke-width="${k==='dot'?7:3}" stroke-linecap="round"/></svg>`;
+
+/* ---------- pictures ---------- */
+const picKey=name=>name.toLowerCase().replace(/ /g,'_');
+const pic=(name,alt='')=>PICS[picKey(name)]?`<img class="pic" src="${PICS[picKey(name)]}" alt="${alt}">`:'';
+const STICKERS=CONTENT.stickers;
+const BUDDY_IMGS=CONTENT.buddies.map(n=>{const i=new Image();i.src=PICS[picKey(n)]||'';return i;});
+
+/* ---------- saved progress (this device only) ---------- */
+const SAVE_KEY='little-writer-v1';
+let S={stars:{},bonus:0,name:'',voice:true,sound:true,phonics:true,buddy:0,seen:0,reps:2};
+try{Object.assign(S,JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));}catch(e){}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+const itemStars=id=>S.stars[id]||0;
+const totalStars=()=>Object.values(S.stars).reduce((a,b)=>a+b,0)+S.bonus;
+const stickersOwned=()=>Math.min(STICKERS.length,Math.floor(totalStars()/3));
+
+/* ---------- sound effects ---------- */
+let AC=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC;}
+function tone(f,dur=.12,type='sine',vol=.18,when=0){
+  if(!S.sound)return;const c=ac();if(!c)return;const t=c.currentTime+when;
+  const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+.02);
+}
+const PENTA=[523,587,659,784,880,1047,1175,1319,1568,1760,2093];
+const sfx={
+  step:i=>tone(PENTA[Math.min(PENTA.length-1,i)],.09,'triangle',.1),
+  stroke:()=>{tone(784,.12,'sine',.14);tone(1175,.18,'sine',.14,.1);},
+  win:()=>[523,659,784,1047,1319].forEach((f,i)=>tone(f,.25,'triangle',.14,i*.1)),
+  boop:()=>tone(196,.18,'triangle',.12),
+  pop:()=>{tone(900,.06,'square',.06);tone(300,.1,'triangle',.1,.03);},
+  tick:()=>tone(1320,.06,'sine',.08)
+};
+
+/* ---------- voice: recorded clips (voice.js), falling back to the phone's own voice ---------- */
+const V={el:new Audio(),token:0};
+V.el.preload='auto';
+const clipOK=k=>window.CLIPS&&CLIPS[k];
+function stopVoice(){V.token++;try{V.el.pause();}catch(e){}try{speechSynthesis.cancel();}catch(e){}}
+function speak(keys){
+  keys=[].concat(keys).filter(Boolean);stopVoice();
+  if(!S.voice||!keys.length)return Promise.resolve();
+  const tok=V.token;
+  if(keys.every(clipOK))return new Promise(res=>{
+    const next=i=>{ if(tok!==V.token||i>=keys.length)return res();
+      V.el.src=CLIPS[keys[i]];V.el.onended=()=>setTimeout(()=>next(i+1),80);V.el.onerror=V.el.onended;
+      V.el.play().catch(()=>res()); };
+    next(0);});
+  return ttsSay(keys.map(k=>PHRASES[k]||'').join(' '));
+}
+let TTS_VOICE=null;
+function pickVoice(){if(!('speechSynthesis' in window))return;const v=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));
+  TTS_VOICE=v.find(v=>/en-NG/i.test(v.lang))||v.find(v=>/natural|neural/i.test(v.name))||v.find(v=>/GB/i.test(v.lang))||v[0]||null;}
+if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+function ttsSay(text){return new Promise(res=>{
+  if(!text||!('speechSynthesis' in window))return res();
+  try{const u=new SpeechSynthesisUtterance(text);u.rate=.9;u.pitch=1.1;if(TTS_VOICE)u.voice=TTS_VOICE;u.onend=res;u.onerror=res;speechSynthesis.speak(u);}catch(e){res();}});}
+const praiseKey=()=>(praiseFlip^=1)?'p7':'p9';
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+</script>

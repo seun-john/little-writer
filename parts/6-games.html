@@ -1,0 +1,205 @@
+
+<script>
+const ROUNDS=5;
+const dotsHTML=(n,on)=>Array.from({length:n},(_,i)=>`<i class="${i<on?'on':''}"></i>`).join('');
+const rint=n=>Math.floor(Math.random()*n);
+const numSVG=(k,c='currentColor',sw=11)=>glyphSVG(NUMS[k-1],c,sw);
+function shakeEl(b,cls='wrong'){b.classList.remove(cls);void b.offsetWidth;b.classList.add(cls);sfx.boop();}
+function roundWin(title,again){
+  sfx.win();confetti(160);const sticker=award(1);
+  speak([praiseKey(),'star',sticker?'sticker':null]);
+  setTimeout(()=>{showOverlay(`<div class="bigstars">⭐</div><div class="big" style="font-size:48px">${title}</div>${stickerHTML(sticker)}
+    <div class="row"><button class="round" id="gAgain" aria-label="Play again">🔁</button><button class="round" id="gHome" aria-label="Home">🏠</button></div>`);
+    $('gAgain').onclick=again;$('gHome').onclick=goHome;},900);
+}
+/* three answer choices around the right number, all between 1 and 10 */
+function numChoices(ans){const o=new Set([ans]);while(o.size<3){const k=ans+rint(7)-3;if(k>=1&&k<=10)o.add(k);}return shuffle([...o]);}
+function thingBtn(name){return `<button class="thing" aria-label="count">${pic(name)}</button>`;}
+function makeCountable(root,state,onDone){
+  root.querySelectorAll('.thing:not(.gone)').forEach(b=>b.onclick=()=>{
+    if(b.classList.contains('counted')||b.classList.contains('gone'))return;state.counted++;b.classList.add('counted');
+    b.insertAdjacentHTML('beforeend',`<span class="n">${state.counted}</span>`);sfx.step(state.counted);speak('n_'+state.counted);
+    onDone&&onDone();
+  });
+}
+
+/* ---------- Count: tap each thing, then pick the number ---------- */
+let C=null;
+function startCount(){show('count');C={round:0,max:Math.min(10,5+Math.floor(totalStars()/15))};onLeave=()=>{C=null;};nextCount();}
+function nextCount(){
+  if(!C)return;$('cDots').innerHTML=dotsHTML(ROUNDS,C.round);
+  C.n=1+rint(C.max);C.counted=0;const thing=rnd(CONTENT.countThings);
+  $('cBox').innerHTML=Array.from({length:C.n},()=>thingBtn(thing)).join('');
+  $('cAns').innerHTML='';$('cPrompt').textContent='Tap each one to count!';
+  speak('count_tap');
+  makeCountable($('cBox'),C,()=>{if(C.counted===C.n)setTimeout(askCount,900);});
+}
+function askCount(){
+  if(!C)return;$('cPrompt').textContent='Which number?';speak(['which']);
+  $('cAns').innerHTML=numChoices(C.n).map(k=>`<button class="ans" data-n="${k}" style="color:var(--sky)" aria-label="${k}">${numSVG(k)}</button>`).join('');
+  $('cAns').querySelectorAll('.ans').forEach(b=>b.onclick=()=>{
+    if(!C)return;const k=+b.dataset.n;
+    if(k===C.n){b.classList.add('right');b.style.color='#fff';sfx.stroke();C.round++;$('cDots').innerHTML=dotsHTML(ROUNDS,C.round);
+      if(C.round>=ROUNDS)roundWin('Counting star!',startCount);else{speak(['n_'+k,praiseKey()]);setTimeout(nextCount,2200);}}
+    else{shakeEl(b);speak(['thatn_'+k,'tryagain']);}
+  });
+}
+$('cSay').onclick=()=>{if(C)speak(C.counted<C.n?'count_tap':'which');};
+
+/* ---------- Add and Take away, with pictures to count ---------- */
+let M=null;
+function startMath(mode){show('math');M={mode,round:0,first:true,tok:0};onLeave=()=>{M=null;};nextMath();}
+async function nextMath(){
+  if(!M)return;const tok=++M.tok,live=()=>M&&M.tok===tok;
+  $('mDots').innerHTML=dotsHTML(ROUNDS,M.round);
+  const max=totalStars()>=30?10:5,add=M.mode==='add';
+  let a,b;
+  if(add){a=1+rint(max-1);b=1+rint(max-a);M.ans=a+b;}else{a=2+rint(max-1);b=1+rint(a-1);M.ans=a-b;}
+  M.a=a;M.b=b;M.counted=0;const thing=rnd(CONTENT.countThings);
+  $('mEq').innerHTML=`<span style="color:var(--sky)">${numSVG(a)}</span><span>${add?'+':'−'}</span><span style="color:var(--coral)">${numSVG(b)}</span><span>=</span><span class="q" id="mQ">?</span>`;
+  $('mBox').innerHTML=add
+    ?`<div class="group">${Array.from({length:a},()=>thingBtn(thing)).join('')}</div><span class="sign">+</span><div class="group">${Array.from({length:b},()=>thingBtn(thing)).join('')}</div>`
+    :`<div class="group" style="max-width:100%">${Array.from({length:a},()=>thingBtn(thing)).join('')}</div>`;
+  $('mAns').innerHTML='';
+  const intro=M.first?[add?'add_intro':'sub_intro']:[];M.first=false;
+  await speak([...intro,'n_'+a,add?'plus':'take','n_'+b]);if(!live())return;
+  if(!add){ // some of them go away
+    const all=[...$('mBox').querySelectorAll('.thing')];
+    all.slice(-b).forEach((el,i)=>setTimeout(()=>{el.classList.add('flyaway','gone');},i*250));
+    sfx.pop();await speak('fly');await wait(500+b*250);if(!live())return;
+  }
+  makeCountable($('mBox'),M);
+  $('mAns').innerHTML=numChoices(M.ans).map(k=>`<button class="ans" data-n="${k}" style="color:var(--sky)" aria-label="${k}">${numSVG(k)}</button>`).join('');
+  $('mAns').querySelectorAll('.ans').forEach(btn=>btn.onclick=()=>answerMath(btn,tok));
+  speak(add?'altogether':'left');
+}
+async function answerMath(btn,tok){
+  if(!M||M.tok!==tok||M.done===tok)return;const k=+btn.dataset.n,add=M.mode==='add';
+  if(k!==M.ans){shakeEl(btn);speak(['thatn_'+k,'tryagain']);return;}
+  M.done=tok;btn.classList.add('right');btn.style.color='#fff';sfx.stroke();
+  const q=$('mQ');q.classList.remove('q');q.style.color='var(--leaf)';q.innerHTML=numSVG(k);
+  M.round++;$('mDots').innerHTML=dotsHTML(ROUNDS,M.round);
+  await speak(['n_'+M.a,add?'plus':'take','n_'+M.b,'equals','n_'+M.ans,praiseKey()]);
+  if(!M||M.tok!==tok)return;
+  if(M.round>=ROUNDS)roundWin(add?'Adding star!':'Take-away star!',()=>startMath(M?M.mode:'add'));
+  else{await wait(500);nextMath();}
+}
+$('mSay').onclick=()=>{if(M)speak(['n_'+M.a,M.mode==='add'?'plus':'take','n_'+M.b,M.mode==='add'?'altogether':'left']);};
+
+/* ---------- a for apple: see the letter, pick its picture ---------- */
+let Ab=null;
+const startWords=it=>it.words.filter(w=>!w.end);
+function startAbc(){show('abc');Ab={round:0,order:shuffle(LETS)};onLeave=()=>{Ab=null;};nextAbc();}
+function nextAbc(){
+  if(!Ab)return;$('aDots').innerHTML=dotsHTML(ROUNDS,Ab.round);
+  const it=Ab.order[Ab.round%Ab.order.length];Ab.it=it;const right=rnd(startWords(it));Ab.right=right;
+  $('aLetter').innerHTML=`<div style="color:var(--coral);height:100%">${glyphSVG(it).replace('<svg','<svg style="height:100%"')}</div>`;
+  $('aPrompt').textContent=`${it.id} is for …?`;
+  const others=shuffle(LETS.filter(x=>x!==it)).slice(0,2).map(x=>rnd(startWords(x)));
+  const opts=shuffle([right,...others]);
+  $('aPicks').innerHTML=opts.map((o,i)=>`<button class="pick" data-i="${i}" aria-label="${o.word}">${pic(o.pic,o.word)}<small>${o.word}</small></button>`).join('');
+  speak('q_'+it.id);
+  $('aPicks').querySelectorAll('.pick').forEach(b=>b.onclick=()=>{
+    if(!Ab)return;const o=opts[+b.dataset.i];
+    if(o===Ab.right){b.classList.add('right');sfx.stroke();Ab.round++;$('aDots').innerHTML=dotsHTML(ROUNDS,Ab.round);
+      $('aPrompt').innerHTML=`${it.id} is for ${wordHTML(o.word,it.id)}!`;
+      speak([o.key,S.phonics?'snd_'+it.id:null,praiseKey()]);
+      if(Ab.round>=ROUNDS)setTimeout(()=>roundWin('Picture star!',startAbc),3000);else setTimeout(nextAbc,3200);}
+    else{shakeEl(b);speak([o.key,'tryagain']);}
+  });
+}
+$('aSay').onclick=()=>{if(Ab)speak('q_'+Ab.it.id);};
+
+/* ---------- Pop the balloon ---------- */
+let Pp=null;
+function choosePop(){
+  showOverlay(`<div class="big" style="font-size:44px">Pop what?</div>
+    <div class="row"><button class="round" id="pN" style="width:84px;height:84px;color:var(--sky)" aria-label="Numbers">${numSVG(3)}</button>
+    <button class="round" id="pL" style="width:84px;height:84px;color:var(--coral)" aria-label="Letters">${glyphSVG(LETS[0],'currentColor',11)}</button>
+    <button class="round" id="pM" style="width:84px;height:84px" aria-label="Both">${pic('Balloon')}</button></div>
+    <div class="row"><button class="textbtn" id="pX">Back</button></div>`);
+  $('pN').onclick=()=>startPop(NUMS);$('pL').onclick=()=>startPop(LETS);$('pM').onclick=()=>startPop([...NUMS,...LETS]);$('pX').onclick=hideOverlay;
+}
+const BCOL=['#ff6b4a','#ffc23d','#2bb673','#3b8df0','#8a5cf0','#e0457b'];
+function startPop(pool){
+  show('pop');Pp={pool,round:0,balloons:[],raf:0,wrong:0};
+  onLeave=()=>{cancelAnimationFrame(Pp.raf);$('sky').innerHTML='';Pp=null;};
+  nextPop();Pp.raf=requestAnimationFrame(popTick);
+}
+const findKey=it=>it.world==='numbers'?'findn_'+it.id:'find_'+it.id;
+const thatKey=it=>it.world==='numbers'?'thatn_'+it.id:'that_'+it.id;
+function nextPop(){
+  if(!Pp)return;$('pDots').innerHTML=dotsHTML(ROUNDS,Pp.round);Pp.wrong=0;
+  const target=rnd(Pp.pool);Pp.target=target;
+  const choices=shuffle([target,...shuffle(Pp.pool.filter(x=>x!==target)).slice(0,3)]);
+  $('sky').innerHTML='';Pp.balloons=[];
+  const w=$('sky').clientWidth,h=$('sky').clientHeight,slot=w/choices.length;
+  choices.forEach((it,i)=>{
+    const el=document.createElement('button');el.className='balloon';el.style.background=BCOL[(i+Pp.round)%BCOL.length];
+    el.innerHTML=glyphSVG(it,'#fff',11);el.setAttribute('aria-label',it.say);
+    const b={el,it,x:slot*i+slot/2-46,y:h*.45+Math.random()*h*.4,v:45+Math.random()*30,ph:Math.random()*6};
+    el.style.transform=`translate(${b.x}px,${b.y}px)`;el.onclick=()=>hitBalloon(b);$('sky').appendChild(el);Pp.balloons.push(b);
+  });
+  $('pPrompt').textContent='Pop the '+(target.world==='numbers'?'number':'letter')+'!';
+  speak(findKey(target));
+}
+function hitBalloon(b){
+  if(!Pp||b.gone)return;
+  if(b.it===Pp.target){b.gone=true;b.el.classList.add('pop');sfx.pop();Pp.round++;$('pDots').innerHTML=dotsHTML(ROUNDS,Pp.round);
+    speak(praiseKey());if(Pp.round>=ROUNDS){const pool=Pp.pool;setTimeout(()=>roundWin('Pop star!',()=>startPop(pool)),700);}else setTimeout(nextPop,1300);}
+  else{b.el.classList.remove('wrong');void b.el.offsetWidth;b.el.classList.add('wrong');sfx.boop();Pp.wrong++;
+    speak([thatKey(b.it),findKey(Pp.target)]);
+    if(Pp.wrong>=2)$('pPrompt').innerHTML=`Find <span style="display:inline-block;height:1.4em;vertical-align:middle">${glyphSVG(Pp.target).replace('<svg','<svg style="height:100%"')}</span>`;}
+}
+function popTick(t){
+  if(!Pp)return;Pp.raf=requestAnimationFrame(popTick);const h=$('sky').clientHeight,dt=Math.min(.05,(t-(Pp.t||t))/1000);Pp.t=t;
+  for(const b of Pp.balloons){if(b.gone)continue;b.y-=b.v*dt;if(b.y<-190)b.y=h+30;
+    b.el.style.transform=`translate(${b.x+Math.sin(t/900+b.ph)*10}px,${b.y}px)`;}
+}
+$('pSay').onclick=()=>{if(Pp)speak(findKey(Pp.target));};
+
+/* ---------- Sticker book ---------- */
+function openStickers(){
+  show('stickers');const tot=totalStars(),own=stickersOwned();
+  $('sStars').textContent='⭐ '+tot;
+  const need=3-(tot%3);
+  $('sNext').textContent=own>=STICKERS.length?'Every sticker collected!':`${need} more star${need>1?'s':''} for a new sticker`;
+  $('sMeter').style.width=(own>=STICKERS.length?100:((tot%3)/3*100))+'%';
+  $('book').innerHTML=STICKERS.map((s,i)=>i<own?`<div class="slot">${pic(s,s)}</div>`:`<div class="slot locked">?</div>`).join('');
+}
+
+/* ---------- Grown-ups corner (press and hold the gear) ---------- */
+let holdT=0;
+$('gear').addEventListener('pointerdown',()=>{holdT=setTimeout(openParent,1200);});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>$('gear').addEventListener(ev,()=>clearTimeout(holdT)));
+$('gear').addEventListener('keydown',e=>{if(e.key==='Enter')openParent();});
+function openParent(){
+  showOverlay(`<div class="parent"><div class="big" style="font-size:32px">Grown-ups</div>
+    <label for="pName">Child's name <input type="text" id="pName" maxlength="20" value="${escapeHTML(S.name)}" placeholder="e.g. Seun"></label>
+    <label for="pVoice">Talking voice <input type="checkbox" id="pVoice" ${S.voice?'checked':''}></label>
+    <label for="pPhon">Say letter sounds ("a says ah") <input type="checkbox" id="pPhon" ${S.phonics?'checked':''}></label>
+    <label for="pReps">Rows to practise before the next one <select id="pReps">${[1,2,3].map(n=>`<option value="${n}" ${n===(S.reps||2)?'selected':''}>${n}</option>`).join('')}</select></label>
+    <label for="pSound">Sound effects <input type="checkbox" id="pSound" ${S.sound?'checked':''}></label>
+    <p class="sub" style="text-align:left;font-size:15px">Stars: ${totalStars()} · Stickers: ${stickersOwned()}/${STICKERS.length}. Progress is saved on this phone.${window.CLIPS?'':' The recorded voice is still loading; the phone\'s own voice is used until then.'}</p>
+    <div class="row" style="flex-wrap:wrap"><button class="textbtn" id="pLines">Hear every voice line</button><button class="textbtn danger" id="pReset">Reset progress</button><button class="textbtn" id="pDone" style="background:var(--leaf);color:#fff">Done</button></div></div>`);
+  const keep=()=>{S.name=$('pName').value.trim();S.voice=$('pVoice').checked;S.phonics=$('pPhon').checked;S.sound=$('pSound').checked;S.reps=+$('pReps').value;save();};
+  $('pDone').onclick=()=>{keep();goHome();};
+  $('pLines').onclick=()=>{keep();openPhraseList();};
+  $('pReset').onclick=()=>{if(confirm('Clear all stars and stickers on this phone?')){S.stars={};S.bonus=0;S.seen=0;save();goHome();}};
+}
+function openPhraseList(){
+  const keys=Object.keys(PHRASES);
+  showOverlay(`<div class="big" style="font-size:28px">Voice lines</div><p class="sub" style="font-size:15px">Tap a line to hear it. Tell Claude the ones that sound wrong.</p>
+    <div class="phrases">${keys.map(k=>`<button data-k="${k}">▶️ <span>${escapeHTML(PHRASES[k])}</span></button>`).join('')}</div>
+    <div class="row"><button class="textbtn" id="plBack">Back</button></div>`);
+  $('ovCard').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>speak(b.dataset.k));
+  $('plBack').onclick=openParent;
+}
+
+/* the recorded voice is big, so it loads after the game is on screen */
+function loadVoice(){const s=document.createElement('script');s.src='voice.js';s.async=true;document.body.appendChild(s);}
+goHome();
+setTimeout(loadVoice,50);
+/* installed app: keep working offline (skipped where the page can't register one) */
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>

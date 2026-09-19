@@ -1,0 +1,250 @@
+
+<script>
+/* ---------- tracing: a worksheet row of copies, like an exercise book ---------- */
+const cv=$('cv'),cx=cv.getContext('2d');
+let T=null,SL=null,raf=0,colors={};
+function readColors(){const cs=getComputedStyle(document.documentElement);
+  ['--paper','--road','--road-edge','--line-red','--line-blue','--muted','--leaf','--sun','--ink'].forEach(k=>colors[k]=cs.getPropertyValue(k).trim());}
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',readColors);
+const imgOf=n=>{const i=new Image();i.src=PICS[picKey(n)]||'';return i;};
+const STAR_IMG=imgOf('Glowing star'),PENCIL_IMG=imgOf('Pencil');
+
+/* which guide each copy gets (0 road, 1 dots, 2 by myself), by how many rows are already done */
+const PLAN=[[0,0,1,1],[0,1,1,2],[1,2,2,2]];
+function planFor(level,n){const row=PLAN[Math.min(2,level)];
+  return n===1?[Math.min(2,level)]:Array.from({length:n},(_,i)=>row[Math.round(i*3/(n-1))]);}
+
+/* level = guide level for this row; visit = rows already done in this sitting; fresh = new item (show the demo) */
+function startTrace(it,level=0,visit=0,fresh=true){
+  show('trace');readColors();
+  T={it,level:Math.min(2,level),visit,fresh,n:0,slots:[],ci:0,si:0,p:0,active:null,last:null,demo:null,locked:true,lastStep:0,nudge:0,idle:performance.now()};
+  $('tStars').innerHTML=starStr(itemStars(it.id));
+  fit();
+  T.slots=planFor(T.level,T.n).map(stage=>({stage,done:[],ink:it.cs.map(()=>[]),finished:false}));fit();
+  renderChips();
+  cancelAnimationFrame(raf);raf=requestAnimationFrame(frame);
+  onLeave=()=>{cancelAnimationFrame(raf);T=null;};
+  if(fresh){speak([it.intro,'watch']);setTimeout(()=>T&&T.it===it&&playDemo(),1500);}
+  else{T.locked=false;renderChips();speak(['again',...strokeWords(it.cs[0])]);}
+}
+const cur=()=>T.slots[T.ci];
+/* how far (in shape units) the finger may be from the line: about half the road, a bit more when writing alone */
+const tolFor=stage=>Math.max(20,T.road*[.62,.6,.72][stage])/T.sc;
+const offFor=stage=>tolFor(stage)*1.7;
+/* distance from a point to the current stroke, looking near where he has got to */
+function nearDist(q){const s=T.it.cs[T.si],a=Math.max(0,T.p-12),b=Math.min(s.pts.length-1,T.p+20);let d=1e9;for(let j=a;j<=b;j++)d=Math.min(d,dist(q,s.pts[j]));return d;}
+function renderChips(){
+  if(!T)return;const all=[];T.it.cs.forEach((s,si)=>s.b.forEach(k=>all.push({k,si})));
+  $('chips').innerHTML=all.map(c=>`<button class="chip ${c.si===T.si&&!T.locked?'on':''} ${c.si<T.si?'done':''}" data-k="${c.k}" aria-label="${BLOCKS[c.k].name}">${blockIcon(c.k)}<span class="cname">${BLOCKS[c.k].name}</span></button>`).join('');
+  $('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>speak(BLOCKS[b.dataset.k].key));
+}
+/* lay the copies out side by side (phone sideways) or stacked (phone upright), as many as fit at a finger-friendly size */
+function fit(){
+  const r=$('stageBox').getBoundingClientRect(),dpr=devicePixelRatio||1;
+  cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);cx.setTransform(dpr,0,0,dpr,0,0);
+  if(!T)return;const b=T.it.box,W=r.width,H=r.height,pad=16,gap=18,horiz=W>=H*1.1;
+  const scFor=n=>horiz?Math.min((W-pad*2-gap*(n-1))/n/b.w,(H-pad*2)/b.h):Math.min((W-pad*2)/b.w,(H-pad*2-gap*(n-1))/n/b.h);
+  if(!T.n){T.n=1;for(let k=horiz?4:2;k>1;k--)if(scFor(k)>=1.85){T.n=k;break;}}
+  const n=T.n,sc=scFor(n),gw=b.w*sc,gh=b.h*sc;
+  T.sc=sc;T.W=W;T.H=H;T.horiz=horiz;T.road=Math.max(30,14*sc);
+  const x0=horiz?(W-(gw*n+gap*(n-1)))/2:(W-gw)/2,y0=horiz?(H-gh)/2:(H-(gh*n+gap*(n-1)))/2;
+  T.pos=Array.from({length:n},(_,i)=>({ox:horiz?x0+i*(gw+gap):x0,oy:horiz?y0:y0+i*(gh+gap)}));
+  T.slots.forEach((s,i)=>Object.assign(s,T.pos[i]));
+}
+addEventListener('resize',()=>T&&fit());
+const P=p=>({x:SL.ox+p.x*T.sc,y:SL.oy+p.y*T.sc});
+
+function playDemo(){
+  if(!T)return;T.locked=true;T.demo={i:0,t0:performance.now()};renderChips();
+  speak(strokeWords(T.it.cs[0]));
+}
+function resetCopy(){const s=cur();s.done=[];s.ink=T.it.cs.map(()=>[]);T.si=0;T.p=0;T.active=null;T.lastStep=0;}
+$('tWatch').onclick=()=>{if(!T||T.demo||!cur())return;resetCopy();playDemo();};
+/* eraser: rub out the copy he is working on and start it again */
+$('tErase').onclick=()=>{if(!T||T.demo||!cur())return;resetCopy();T.locked=false;renderChips();T.idle=performance.now();
+  sfx.tick();speak(['erase',...strokeWords(T.it.cs[0])]);};
+$('tBack').onclick=()=>openWorld(T?T.it.world:curWorld);
+
+function demoLen(s){return s.dot?600:Math.min(2800,Math.max(1300,s.pts.length*17));}
+function stepDemo(now){
+  const d=T.demo,s=T.it.cs[d.i];const k=Math.min(1,(now-d.t0)/demoLen(s));
+  if(k>=1){
+    d.i++;d.t0=now+300;
+    if(d.i>=T.it.cs.length){T.demo=null;setTimeout(beginTracing,400);}
+    else speak(strokeWords(T.it.cs[d.i]));
+  }
+  return k;
+}
+/* voice keys for a stroke: its tip, or its blocks joined with "then" */
+function strokeWords(s){if(s.tip)return[s.tip];const out=[];s.b.forEach((k,i)=>{if(i)out.push('then');out.push(BLOCKS[k].key);});return out;}
+function beginTracing(){
+  if(!T)return;resetCopy();T.locked=false;renderChips();T.idle=performance.now();
+  speak([S.seen<3?'turn_first':'turn',...strokeWords(T.it.cs[0])]);S.seen++;save();
+}
+
+/* input */
+function toUnits(e){const r=cv.getBoundingClientRect(),s=cur();return{x:(e.clientX-r.left-s.ox)/T.sc,y:(e.clientY-r.top-s.oy)/T.sc};}
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault();ac();if(!T||T.locked||T.active!==null||!cur())return;
+  const u=toUnits(e),s=T.it.cs[T.si];T.idle=performance.now();
+  if(s.dot){ if(dist(u,s)<tolFor(cur().stage)*1.5){cur().ink[T.si].push([u]);completeStroke();} else nudge(); return; }
+  const here=s.pts[T.p];
+  if(dist(u,here)<=tolFor(cur().stage)*1.5){T.active=e.pointerId;T.last=u;try{cv.setPointerCapture(e.pointerId);}catch(_){}cur().ink[T.si].push([u]);advance(u);}
+  else nudge();
+});
+cv.addEventListener('pointermove',e=>{
+  if(!T||e.pointerId!==T.active)return;
+  const u=toUnits(e),from=T.last,d=dist(from,u),n=Math.max(1,Math.ceil(d/1.5)),si=T.si,slot=cur();
+  T.idle=performance.now();
+  for(let i=1;i<=n&&T.active!==null&&cur()===slot&&T.si===si;i++){
+    const q={x:from.x+(u.x-from.x)*i/n,y:from.y+(u.y-from.y)*i/n};
+    if(nearDist(q)>offFor(slot.stage)){offTrack();break;}
+    if(slot.stage===2){const st=slot.ink[si];if(st&&st.length)st[st.length-1].push(q);}
+    advance(q);
+  }
+  T.last=u;
+});
+const endPtr=e=>{if(T&&e.pointerId===T.active){T.active=null;if(!T.locked&&nearEnd())completeStroke();}};
+cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
+
+/* close enough to the end of the stroke to count it (a small child often stops just short) */
+function nearEnd(){const s=T.it.cs[T.si];return s&&!s.dot&&T.p>=s.pts.length-1-Math.max(3,tolFor(cur().stage)*.6);}
+function advance(q){
+  const s=T.it.cs[T.si];if(!s||s.dot)return;
+  const tol=tolFor(cur().stage),end=Math.min(s.pts.length-1,T.p+12);
+  let best=-1,bd=1e9;
+  for(let j=T.p;j<=end;j++){const d=dist(q,s.pts[j]);if(d<tol&&d<bd){bd=d;best=j;}}
+  if(best>T.p){
+    T.p=best;const frac=T.p/(s.pts.length-1),stepI=Math.floor(frac*10);
+    if(stepI>T.lastStep){T.lastStep=stepI;sfx.step(stepI);}
+    if(nearEnd())completeStroke();
+  }
+}
+/* finger wandered off the line: stop, wobble, and let him carry on from where he left it */
+function offTrack(){T.active=null;T.nudge=performance.now();sfx.boop();
+  if(performance.now()-(T.lastNudgeSay||0)>2500){T.lastNudgeSay=performance.now();speak('offtrack');}}
+function nudge(){T.nudge=performance.now();sfx.boop();
+  if(performance.now()-(T.lastNudgeSay||0)>4000){T.lastNudgeSay=performance.now();speak(T.it.cs[T.si].dot?'tapdot':'green');}}
+function completeStroke(){
+  const slot=cur();slot.done.push(T.si);T.active=null;T.lastStep=0;
+  if(T.si+1<T.it.cs.length){sfx.stroke();T.si++;T.p=0;renderChips();speak(strokeWords(T.it.cs[T.si]));return;}
+  slot.finished=true;T.si=0;T.p=0;
+  if(T.ci+1<T.slots.length){ // on to the next copy in the row
+    sfx.win();T.ci++;renderChips();T.idle=performance.now();
+    speak([praiseKey(),...strokeWords(T.it.cs[0])]);return;}
+  T.ci=T.slots.length;T.locked=true;renderChips();finishRow();
+}
+const pickWord=it=>it.words.length?rnd(it.words):null;
+function finishRow(){
+  const it=T.it,level=T.level,visit=T.visit+1;
+  sfx.win();confetti();
+  const sticker=award(level+1,it.id);
+  const word=it.world==='letters'?pickWord(it):null;
+  const keys=[praiseKey()];
+  if(word){keys.push(word.key);if(S.phonics)keys.push('snd_'+it.id);}
+  else if(it.world==='lines'&&it.id!=='cross')keys.push(BLOCKS[it.cs[0].b[0]].key);
+  if(sticker)keys.push('sticker');
+  speak(keys);
+  setTimeout(()=>{ if(!T||T.it!==it)return; rewardCard(it,level,visit,sticker,word); },1100);
+}
+function wordHTML(word,l){const i=word.indexOf(l);return i<0?word:`${word.slice(0,i)}<em>${l}</em>${word.slice(i+1)}`;}
+/* after a row: practise the same one again until the grown-up's number of rows is reached, then move to the next one */
+function nextStep(it,level,visit){
+  const w=WORLDS[it.world],idx=w.items.indexOf(it);
+  if(visit<(S.reps||2))return()=>startTrace(it,level+1,visit,false);
+  if(idx+1>=w.items.length)return()=>openWorld(it.world);
+  const nx=w.items[idx+1];return()=>startTrace(nx,Math.min(2,itemStars(nx.id)),0,true);
+}
+function rewardCard(it,level,visit,sticker,word){
+  const w=WORLDS[it.world],stars=itemStars(it.id),go=nextStep(it,level,visit);
+  let mid='',extra=0;
+  if(it.world==='numbers'){const thing=CONTENT.countThings[(it.n-1)%CONTENT.countThings.length];
+    mid=`<div class="pics" id="rPics"></div>`;extra=3100+it.n*850;
+    (async()=>{await wait(1800);let box=$('rPics');if(!box)return;speak('count_them');await wait(1300);
+      for(let k=1;k<=it.n;k++){box=$('rPics');if(!box||$('ov').hidden)return;
+        box.insertAdjacentHTML('beforeend',`<span>${pic(thing)}</span>`);sfx.step(k);speak('n_'+k);await wait(850);}})();}
+  else if(word){mid=`<div class="pics">${pic(word.pic,word.word).replace('class="pic"','class="pic" style="font-size:96px"')}</div><div class="word">${wordHTML(word.word,it.id)}</div>`;extra=1500;}
+  else mid=`<div class="word">${it.say}</div>`;
+  showOverlay(`<div class="bigstars">${starStr(stars)}</div>
+    <div class="glyphbox" style="color:var(${w.color})">${glyphSVG(it).replace('<svg','<svg style="height:100%"')}</div>
+    ${mid}${stickerHTML(sticker)}
+    <div class="row"><button class="round" id="rAgain" aria-label="Again">🔁</button>
+    <button class="round go" id="rNext" aria-label="Next"><span>▶️</span></button>
+    <button class="round" id="rHome" aria-label="Home">🏠</button></div>`);
+  let timer=0;const stop=()=>clearTimeout(timer);
+  $('rAgain').onclick=()=>{stop();startTrace(it,level,visit-1,false);};
+  $('rNext').onclick=()=>{stop();go();};
+  $('rHome').onclick=()=>{stop();openWorld(it.world);};
+  /* carry on by itself after a short pause, with a ring filling round the play button */
+  const delay=2600+extra;
+  $('rNext').style.setProperty('--wait',(delay/1000)+'s');$('rNext').classList.add('counting');
+  timer=setTimeout(()=>{if(!$('ov').hidden&&$('rNext'))go();},delay);
+}
+
+/* drawing */
+function path(pts,from=0,to=pts.length-1){cx.beginPath();const a=P(pts[from]);cx.moveTo(a.x,a.y);for(let i=from+1;i<=to;i++){const q=P(pts[i]);cx.lineTo(q.x,q.y);}}
+function strokeStyle(c,w){cx.strokeStyle=c;cx.lineWidth=w;cx.lineCap='round';cx.lineJoin='round';cx.stroke();}
+function img(im,p,size){if(im&&im.complete&&im.naturalWidth)cx.drawImage(im,p.x-size/2,p.y-size/2,size,size);}
+function drawInk(list,c,w){for(const seg of list){if(seg.length===1){const q=P(seg[0]);cx.beginPath();cx.arc(q.x,q.y,w/2,0,7);cx.fillStyle=c;cx.fill();continue;}
+  cx.beginPath();seg.forEach((u,i)=>{const q=P(u);i?cx.lineTo(q.x,q.y):cx.moveTo(q.x,q.y);});strokeStyle(c,w);}}
+function drawLines(){
+  const rows=T.horiz?[T.slots[0]||T.pos[0]]:(T.slots.length?T.slots:T.pos);
+  for(const r of rows)for(const [y,kind] of T.it.box.lines){const py=r.oy+y*T.sc;cx.beginPath();cx.setLineDash(kind==='d'?[10,10]:[]);
+    cx.moveTo(10,py);cx.lineTo(T.W-10,py);cx.strokeStyle=kind==='r'?colors['--line-red']:colors['--line-blue'];cx.lineWidth=kind==='d'?2:3;cx.stroke();}
+  cx.setLineDash([]);
+}
+function drawGuide(stage,strong){ // the shape to follow: road, dots, or nothing
+  const road=T.road;
+  for(const s of T.it.cs){
+    if(s.dot){if(stage<2){const q=P(s);cx.beginPath();cx.arc(q.x,q.y,road*.45,0,7);cx.fillStyle=colors['--road'];cx.fill();}continue;}
+    if(stage===0||strong){path(s.pts);strokeStyle(colors['--road-edge'],road+4);path(s.pts);strokeStyle(colors['--road'],road);}
+    else if(stage===1){for(let j=0;j<s.pts.length;j+=7){const q=P(s.pts[j]);cx.beginPath();cx.arc(q.x,q.y,Math.max(3.5,road*.11),0,7);cx.fillStyle=colors['--muted'];cx.fill();}}
+  }
+}
+function drawDone(slot){
+  slot.done.forEach(i=>{const s=T.it.cs[i];
+    if(slot.stage===2)drawInk(slot.ink[i],INK[i%4],T.road*.5);
+    else if(s.dot){const q=P(s);cx.beginPath();cx.arc(q.x,q.y,T.road*.38,0,7);cx.fillStyle=INK[i%4];cx.fill();}
+    else{path(s.pts);strokeStyle(INK[i%4],T.road*.6);}});
+}
+function frame(now){
+  raf=requestAnimationFrame(frame);if(!T||!T.slots.length)return;
+  const cs=T.it.cs,road=T.road;
+  cx.clearRect(0,0,T.W,T.H);
+  drawLines();
+  T.slots.forEach((slot,idx)=>{
+    SL=slot;
+    if(slot.finished){drawDone(slot);return;}
+    if(idx!==T.ci){cx.globalAlpha=.55;drawGuide(slot.stage);cx.globalAlpha=1;return;}
+    drawCurrent(slot,now);
+  });
+}
+function drawCurrent(slot,now){
+  const cs=T.it.cs,road=T.road,stage=slot.stage;
+  drawGuide(stage,!!T.demo);
+  if(T.demo){const k=stepDemo(now);if(!T.demo)return;
+    cs.forEach((s,i)=>{if(i>T.demo.i)return;const kk=i<T.demo.i?1:Math.max(0,k);
+      if(s.dot){if(kk>.2){const q=P(s);cx.beginPath();cx.arc(q.x,q.y,road*.35,0,7);cx.fillStyle=INK[i%4];cx.fill();}return;}
+      const to=Math.max(1,Math.floor(kk*(s.pts.length-1)));path(s.pts,0,to);strokeStyle(INK[i%4],road*.55);
+      if(i===T.demo.i){const tip=P(s.pts[to]);img(PENCIL_IMG,{x:tip.x+road*.4,y:tip.y-road*.5},road*1.2);}});
+    return;}
+  drawDone(slot);
+  const s=cs[T.si];if(!s)return;
+  if(s.dot){const q=P(s),pulse=1+.15*Math.sin(now/180);cx.beginPath();cx.arc(q.x,q.y,road*.45*pulse,0,7);cx.fillStyle=colors['--leaf'];cx.fill();return;}
+  const pts=s.pts,n=pts.length;
+  if(stage===0){ // chevrons showing direction
+    for(let j=14;j<n-10;j+=22){const a=P(pts[j]),b=P(pts[Math.min(n-1,j+2)]),ang=Math.atan2(b.y-a.y,b.x-a.x),r=road*.18;
+      cx.save();cx.translate(a.x,a.y);cx.rotate(ang);cx.beginPath();cx.moveTo(r,0);cx.lineTo(-r,-r);cx.lineTo(-r*.3,0);cx.lineTo(-r,r);cx.closePath();cx.fillStyle=colors['--road-edge'];cx.fill();cx.restore();}
+  }
+  // hint if a child is stuck in "by myself"
+  if(stage===2&&now-T.idle>7000){path(pts);cx.globalAlpha=.35;strokeStyle(colors['--road-edge'],road*.4);cx.globalAlpha=1;}
+  if(stage<2&&T.p>0){path(pts,0,T.p);strokeStyle(INK[T.si%4],road*.6);}
+  if(stage===2)drawInk(slot.ink[T.si],INK[T.si%4],road*.5);
+  if(stage<2)img(STAR_IMG,P(pts[n-1]),road*1.05);
+  const here=P(pts[T.p]),shake=now-T.nudge<500?Math.sin(now/30)*6:0,pulse=1+.18*Math.sin(now/200);
+  if(T.active===null){cx.beginPath();cx.arc(here.x+shake,here.y,road*.55*pulse,0,7);cx.fillStyle=colors['--leaf'];cx.globalAlpha=.9;cx.fill();cx.globalAlpha=1;}
+  if(stage<2)img(BUDDY_IMGS[S.buddy%BUDDY_IMGS.length],{x:here.x+shake,y:here.y},road*1.05);
+  else if(T.active===null&&T.p===0){const b=P(pts[Math.min(n-1,10)]),ang=Math.atan2(b.y-here.y,b.x-here.x);
+    cx.save();cx.translate(here.x,here.y);cx.rotate(ang);cx.fillStyle='#fff';cx.beginPath();cx.moveTo(road*.3,0);cx.lineTo(-road*.15,-road*.2);cx.lineTo(-road*.15,road*.2);cx.fill();cx.restore();}
+}
+</script>

@@ -1,0 +1,83 @@
+
+<script>
+const $=id=>document.getElementById(id);
+const SCREENS=['home','world','trace','count','math','abc','pop','stickers'];
+let onLeave=null;
+function show(id){
+  if(onLeave){const f=onLeave;onLeave=null;f();}
+  stopVoice();
+  SCREENS.forEach(s=>$(s).hidden=s!==id);
+  hideOverlay();
+}
+/* first touch unlocks sound on phones */
+document.addEventListener('pointerdown',()=>{ac();try{V.el.muted=true;V.el.play().catch(()=>{}).finally(()=>{V.el.pause();V.el.muted=false;});}catch(e){}},{once:true});
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>goHome());
+
+/* ---------- home ---------- */
+function goHome(){
+  show('home');
+  $('hello').innerHTML=S.name?`Hi, <span>${escapeHTML(S.name)}!</span>`:`Let's <span>write!</span>`;
+  $('homeStars').textContent='⭐ '+totalStars();
+  $('buddyBtn').innerHTML=pic(CONTENT.buddies[S.buddy%CONTENT.buddies.length],'buddy');
+  const own=stickersOwned();
+  $('stickPeek').innerHTML=own?STICKERS.slice(Math.max(0,own-4),own).map(n=>pic(n)).join(''):pic('Glowing star');
+  $('stickSub').textContent=`${own} of ${STICKERS.length} collected`;
+}
+function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+$('artLines').innerHTML=['stand','slantL','circle'].map(id=>glyphSVG(findItem(id),'#fff',11)).join('');
+$('artNum').innerHTML=['1','2','3'].map(id=>glyphSVG(findItem(id),'#fff',11)).join('');
+$('artLet').innerHTML=['a','b','c'].map(id=>glyphSVG(findItem(id),'#fff',11)).join('');
+document.querySelectorAll('[data-pics]').forEach(el=>el.innerHTML=el.dataset.pics.split(',').map(n=>pic(n)).join(''));
+$('tErase').innerHTML=pic('Sponge','rub out');
+$('buddyBtn').onclick=()=>{S.buddy=(S.buddy+1)%CONTENT.buddies.length;save();$('buddyBtn').innerHTML=pic(CONTENT.buddies[S.buddy],'buddy');sfx.tick();};
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
+  const g=b.dataset.go;
+  if(WORLDS[g])openWorld(g);
+  else if(g==='count')startCount();
+  else if(g==='add')startMath('add');
+  else if(g==='sub')startMath('sub');
+  else if(g==='abc')startAbc();
+  else if(g==='pop')choosePop();
+  else if(g==='stickers')openStickers();
+});
+
+/* ---------- world grid ---------- */
+let curWorld='numbers';
+function openWorld(wk){
+  curWorld=wk;show('world');
+  const w=WORLDS[wk];$('wTitle').textContent=w.title;
+  const nextIt=w.items.find(i=>itemStars(i.id)<1)||w.items.find(i=>itemStars(i.id)<3);
+  $('items').innerHTML=w.items.map(it=>`<button class="item${it===nextIt?' next':''}" data-id="${it.id}" style="color:var(${w.color})" aria-label="${it.say}">
+    ${glyphSVG(it)}<span class="stars">${starStr(itemStars(it.id))}</span></button>`).join('');
+  $('items').querySelectorAll('.item').forEach(b=>b.onclick=()=>{const it=findItem(b.dataset.id);startTrace(it,Math.min(2,itemStars(it.id)));});
+  nextIt&&$('items').querySelector('.next')?.scrollIntoView({block:'nearest'});
+}
+const starStr=n=>[0,1,2].map(i=>`<span class="${i<n?'':'off'}">⭐</span>`).join('');
+
+/* ---------- overlay + confetti ---------- */
+function showOverlay(html){$('ovCard').innerHTML=html;$('ov').hidden=false;}
+function hideOverlay(){$('ov').hidden=true;}
+const cf=$('confetti'),cfx=cf.getContext('2d');let parts=[],cfRun=false;
+function confetti(n=120){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const dpr=devicePixelRatio||1;cf.width=innerWidth*dpr;cf.height=innerHeight*dpr;cfx.setTransform(dpr,0,0,dpr,0,0);
+  const cols=['#ff6b4a','#ffc23d','#2bb673','#3b8df0','#8a5cf0','#e0457b'];
+  for(let i=0;i<n;i++)parts.push({x:innerWidth/2,y:innerHeight*.45,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,r:Math.random()*6+4,c:rnd(cols),a:Math.random()*6,life:1});
+  if(!cfRun){cfRun=true;requestAnimationFrame(cfTick);}
+}
+function cfTick(){
+  cfx.clearRect(0,0,innerWidth,innerHeight);
+  parts=parts.filter(p=>p.life>0&&p.y<innerHeight+20);
+  for(const p of parts){p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.a+=.2;p.life-=.008;
+    cfx.save();cfx.translate(p.x,p.y);cfx.rotate(p.a);cfx.fillStyle=p.c;cfx.globalAlpha=Math.max(0,p.life);cfx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);cfx.restore();}
+  if(parts.length)requestAnimationFrame(cfTick);else{cfRun=false;cfx.clearRect(0,0,innerWidth,innerHeight);}
+}
+function award(n,itemId){
+  const before=stickersOwned();
+  if(itemId)S.stars[itemId]=Math.max(itemStars(itemId),n);else S.bonus+=n;
+  save();
+  const after=stickersOwned();
+  return after>before?STICKERS[after-1]:null;
+}
+const stickerHTML=s=>s?`<div class="newsticker">New sticker! <span style="font-size:48px">${pic(s)}</span></div>`:'';
+</script>

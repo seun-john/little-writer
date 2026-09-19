@@ -1,0 +1,5 @@
+# build copies used for the Claude preview; the published app is docs/
+/index.html
+/content.js
+/voice.js
+__pycache__/
