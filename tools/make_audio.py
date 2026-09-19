@@ -18,8 +18,8 @@ for l, d in C["letters"].items():
     P[f"that_{l}"] = f"That is the letter {U}."
     P[f"snd_{l}"] = f"{U} says... {d['sound']}."
     for i, w in enumerate(d["words"]):
-        word = w[0].replace("-", " ") if w[0] != "yo-yo" else "yo-yo"
-        P[f"is_{l}_{i}"] = f"{word.capitalize()} ends with {U}." if len(w) > 2 else f"{U} is for {word}."
+        word = w["w"].replace("-", " ") if w["w"] != "yo-yo" else "yo-yo"
+        P[f"is_{l}_{i}"] = f"{word.capitalize()} ends with {U}." if w.get("end") else f"{U} is for {word}."
 for k, word in enumerate(C["numbers"], 1):
     P[f"n_{k}"] = f"{word.capitalize()}."
     P[f"wrn_{k}"] = f"Let's write number {word}!"
@@ -46,6 +46,8 @@ P.update({
     "plus": "plus", "take": "take away", "equals": "makes",
     "altogether": "How many altogether?", "left": "How many are left?",
     "fly": "Bye bye!", "pick": "Pick a game!",
+    "t_lines": "Lines!", "t_numbers": "Numbers!", "t_letters": "Letters!",
+    "t_pop": "Pop the balloons!", "t_stickers": "Your stickers!",
 })
 
 

@@ -3,7 +3,7 @@
 <script>
 /* content.js (built by build.py) provides CONTENT (words, picture names), PHRASES (voice line texts) and PICS (pictures). */
 window.CONTENT=window.CONTENT||{letters:{},numbers:[],countThings:[],stickers:[],buddies:[]};
-window.PHRASES=window.PHRASES||{};window.PICS=window.PICS||{};
+window.PHRASES=window.PHRASES||{};window.PICS=window.PICS||{};window.PHOTOS=window.PHOTOS||{};
 
 /* ---------- building blocks: words shown on the chips and the voice line for each ---------- */
 const BLOCKS = {
@@ -84,7 +84,7 @@ const WORLDS = {
     items:NUMBER_STROKES.map((strokes,i)=>({id:String(i+1),n:i+1,say:NUMWORDS[i],intro:'wrn_'+(i+1),strokes}))},
   letters:{title:'Letters', color:'--coral', box:LET,
     items:Object.keys(LETTER_STROKES).map(l=>({id:l,say:'the letter '+l.toUpperCase(),intro:'wr_'+l,strokes:LETTER_STROKES[l],
-      words:((CONTENT.letters[l]||{}).words||[]).map((w,i)=>({word:w[0],pic:w[1],end:!!w[2],key:`is_${l}_${i}`}))}))}
+      words:((CONTENT.letters[l]||{}).words||[]).map((w,i)=>({word:w.w,pic:w.pic,end:!!w.end,key:`is_${l}_${i}`}))}))}
 };
 const STAGES=['Trace the road','Follow the dots','All by myself'];
 const INK=['#ff6b4a','#3b8df0','#2bb673','#8a5cf0'];
@@ -131,7 +131,9 @@ const blockIcon=k=>`<svg viewBox="0 0 24 24"><path d="${BLOCKS[k].icon}" fill="n
 
 /* ---------- pictures ---------- */
 const picKey=name=>name.toLowerCase().replace(/ /g,'_');
-const pic=(name,alt='')=>PICS[picKey(name)]?`<img class="pic" src="${PICS[picKey(name)]}" alt="${alt}">`:'';
+const pic=(name,alt='')=>name&&PICS[picKey(name)]?`<img class="pic" src="${PICS[picKey(name)]}" alt="${alt}">`:'';
+/* a word's picture: the real photo once photos.js has loaded, the cartoon until then */
+const wordPic=w=>PHOTOS[w.word]?`<img class="photo" src="${PHOTOS[w.word]}" alt="${w.word}">`:(pic(w.pic,w.word)||pic('Star',w.word));
 const STICKERS=CONTENT.stickers;
 const BUDDY_IMGS=CONTENT.buddies.map(n=>{const i=new Image();i.src=PICS[picKey(n)]||'';return i;});
 

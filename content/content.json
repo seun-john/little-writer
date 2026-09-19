@@ -1,37 +1,595 @@
 {
-  "voice": "en-NG-EzinneNeural",
-  "rate": "-12%",
-  "letters": {
-    "a": {"sound": "ah",  "words": [["apple","Red apple"],["ant","Ant"],["airplane","Airplane"]]},
-    "b": {"sound": "buh", "words": [["ball","Soccer ball"],["banana","Banana"],["bus","Bus"]]},
-    "c": {"sound": "kuh", "words": [["cat","Cat face"],["car","Automobile"],["cake","Birthday cake"]]},
-    "d": {"sound": "duh", "words": [["dog","Dog face"],["duck","Duck"],["drum","Drum"]]},
-    "e": {"sound": "eh",  "words": [["egg","Egg"],["elephant","Elephant"],["envelope","Envelope"]]},
-    "f": {"sound": "fff", "words": [["fish","Fish"],["frog","Frog"],["flower","Sunflower"]]},
-    "g": {"sound": "guh", "words": [["goat","Goat"],["grapes","Grapes"],["gift","Wrapped gift"]]},
-    "h": {"sound": "huh", "words": [["hen","Chicken"],["house","House"],["horse","Horse face"]]},
-    "i": {"sound": "ih",  "words": [["insect","Lady beetle"],["injection","Syringe"],["iguana","Lizard"]]},
-    "j": {"sound": "juh", "words": [["juice","Beverage box"],["jacket","Coat"],["jellyfish","Jellyfish"]]},
-    "k": {"sound": "kuh", "words": [["kite","Kite"],["key","Old key"],["kangaroo","Kangaroo"]]},
-    "l": {"sound": "lll", "words": [["lion","Lion"],["lemon","Lemon"],["leaf","Leaf fluttering in wind"]]},
-    "m": {"sound": "mmm", "words": [["mango","Mango"],["monkey","Monkey face"],["moon","Crescent moon"]]},
-    "n": {"sound": "nnn", "words": [["nose","Nose"],["nest","Nest with eggs"],["nuts","Peanuts"]]},
-    "o": {"sound": "o",   "words": [["orange","Tangerine"],["owl","Owl"],["octopus","Octopus"]]},
-    "p": {"sound": "puh", "words": [["pineapple","Pineapple"],["parrot","Parrot"],["pen","Pen"]]},
-    "q": {"sound": "kwuh","words": [["queen","Princess"],["quiet","Shushing face"],["question","Red question mark"]]},
-    "r": {"sound": "rrr", "words": [["rabbit","Rabbit face"],["rain","Cloud with rain"],["rose","Rose"]]},
-    "s": {"sound": "sss", "words": [["sun","Sun"],["snake","Snake"],["socks","Socks"]]},
-    "t": {"sound": "tuh", "words": [["tree","Deciduous tree"],["tomato","Tomato"],["tiger","Tiger face"]]},
-    "u": {"sound": "uh",  "words": [["umbrella","Umbrella"],["up","Up arrow"],["unicorn","Unicorn"]]},
-    "v": {"sound": "vvv", "words": [["van","Minibus"],["violin","Violin"],["volcano","Volcano"]]},
-    "w": {"sound": "wuh", "words": [["watch","Watch"],["whale","Spouting whale"],["window","Window"]]},
-    "x": {"sound": "ks",  "words": [["x-ray","X-ray"],["box","Package","end"],["fox","Fox","end"]]},
-    "y": {"sound": "yuh", "words": [["yam","Roasted sweet potato"],["yo-yo","Yo-yo"],["yawn","Yawning face"]]},
-    "z": {"sound": "zzz", "words": [["zebra","Zebra"],["zero","Keycap 0"],["zip","Zipper-mouth face"]]}
+ "voice": "en-NG-EzinneNeural",
+ "rate": "-12%",
+ "letters": {
+  "a": {
+   "sound": "ah",
+   "words": [
+    {
+     "w": "apple",
+     "pic": "Red apple",
+     "q": "red apple fruit"
+    },
+    {
+     "w": "ant",
+     "pic": "Ant",
+     "q": "ant insect macro"
+    },
+    {
+     "w": "airplane",
+     "pic": "Airplane",
+     "q": "airplane flying sky"
+    }
+   ]
   },
-  "numbers": ["one","two","three","four","five","six","seven","eight","nine","ten"],
-  "countThings": ["Tangerine","Red apple","Baby chick","Soccer ball","Automobile","Banana","Fish","Star","Balloon","Lady beetle"],
-  "stickers": ["Lion","Elephant","Giraffe","Monkey face","Turtle","Butterfly","Spouting whale","Parrot","Dolphin","Fox","Panda","Koala","Tiger face","Zebra","Flamingo","Octopus","Unicorn","Frog","Rabbit face","Dog face","Cat face","Chicken","Honeybee","Lady beetle","Tropical fish","Crab","Penguin","Owl","Bear","Cow face","Pig face","Ewe","Sauropod","T-rex","Rocket","Fire engine","Tractor","Guitar","Trophy","Crown"],
-  "buddies": ["Honeybee","Butterfly","Lady beetle","Automobile","Rocket","Tropical fish"],
-  "extraPics": ["Glowing star","Sponge","Pencil","House"]
+  "b": {
+   "sound": "buh",
+   "words": [
+    {
+     "w": "ball",
+     "pic": "Soccer ball",
+     "q": "football soccer ball"
+    },
+    {
+     "w": "banana",
+     "pic": "Banana",
+     "q": "banana bunch yellow"
+    },
+    {
+     "w": "bus",
+     "pic": "Bus",
+     "q": "yellow bus"
+    }
+   ]
+  },
+  "c": {
+   "sound": "kuh",
+   "words": [
+    {
+     "w": "cat",
+     "pic": "Cat face",
+     "q": "cat"
+    },
+    {
+     "w": "car",
+     "pic": "Automobile",
+     "q": "sedan car"
+    },
+    {
+     "w": "cake",
+     "pic": "Birthday cake",
+     "q": "birthday cake"
+    }
+   ]
+  },
+  "d": {
+   "sound": "duh",
+   "words": [
+    {
+     "w": "dog",
+     "pic": "Dog face",
+     "q": "dog puppy"
+    },
+    {
+     "w": "duck",
+     "pic": "Duck",
+     "q": "mallard duck"
+    },
+    {
+     "w": "drum",
+     "pic": "Drum",
+     "q": "djembe drum"
+    }
+   ]
+  },
+  "e": {
+   "sound": "eh",
+   "words": [
+    {
+     "w": "egg",
+     "pic": "Egg",
+     "q": "chicken egg"
+    },
+    {
+     "w": "elephant",
+     "pic": "Elephant",
+     "q": "african elephant"
+    },
+    {
+     "w": "envelope",
+     "pic": "Envelope",
+     "q": "white envelope"
+    }
+   ]
+  },
+  "f": {
+   "sound": "fff",
+   "words": [
+    {
+     "w": "fish",
+     "pic": "Fish",
+     "q": "fish"
+    },
+    {
+     "w": "frog",
+     "pic": "Frog",
+     "q": "green frog"
+    },
+    {
+     "w": "flower",
+     "pic": "Sunflower",
+     "q": "flower"
+    }
+   ]
+  },
+  "g": {
+   "sound": "guh",
+   "words": [
+    {
+     "w": "goat",
+     "pic": "Goat",
+     "q": "goat"
+    },
+    {
+     "w": "grapes",
+     "pic": "Grapes",
+     "q": "grapes bunch"
+    },
+    {
+     "w": "gift",
+     "pic": "Wrapped gift",
+     "q": "gift box ribbon"
+    }
+   ]
+  },
+  "h": {
+   "sound": "huh",
+   "words": [
+    {
+     "w": "hen",
+     "pic": "Chicken",
+     "q": "hen chicken"
+    },
+    {
+     "w": "house",
+     "pic": "House",
+     "q": "house"
+    },
+    {
+     "w": "horse",
+     "pic": "Horse face",
+     "q": "horse"
+    }
+   ]
+  },
+  "i": {
+   "sound": "ih",
+   "words": [
+    {
+     "w": "insect",
+     "pic": "Lady beetle",
+     "q": "ladybug insect"
+    },
+    {
+     "w": "injection",
+     "pic": "Syringe",
+     "q": "syringe"
+    },
+    {
+     "w": "iguana",
+     "pic": "Lizard",
+     "q": "iguana"
+    }
+   ]
+  },
+  "j": {
+   "sound": "juh",
+   "words": [
+    {
+     "w": "juice",
+     "pic": "Beverage box",
+     "q": "orange juice glass"
+    },
+    {
+     "w": "jacket",
+     "pic": "Coat",
+     "q": "jacket on hanger"
+    },
+    {
+     "w": "jellyfish",
+     "pic": "Jellyfish",
+     "q": "jellyfish"
+    }
+   ]
+  },
+  "k": {
+   "sound": "kuh",
+   "words": [
+    {
+     "w": "kite",
+     "pic": "Kite",
+     "q": "kite flying sky"
+    },
+    {
+     "w": "key",
+     "pic": "Old key",
+     "q": "key"
+    },
+    {
+     "w": "kangaroo",
+     "pic": "Kangaroo",
+     "q": "kangaroo"
+    }
+   ]
+  },
+  "l": {
+   "sound": "lll",
+   "words": [
+    {
+     "w": "lion",
+     "pic": "Lion",
+     "q": "lion"
+    },
+    {
+     "w": "lemon",
+     "pic": "Lemon",
+     "q": "lemon fruit"
+    },
+    {
+     "w": "leaf",
+     "pic": "Leaf fluttering in wind",
+     "q": "single green leaf"
+    }
+   ]
+  },
+  "m": {
+   "sound": "mmm",
+   "words": [
+    {
+     "w": "mango",
+     "pic": "Mango",
+     "q": "mango fruit"
+    },
+    {
+     "w": "monkey",
+     "pic": "Monkey face",
+     "q": "monkey"
+    },
+    {
+     "w": "moon",
+     "pic": "Crescent moon",
+     "q": "full moon"
+    }
+   ]
+  },
+  "n": {
+   "sound": "nnn",
+   "words": [
+    {
+     "w": "nest",
+     "pic": "Nest with eggs",
+     "q": "bird nest eggs"
+    },
+    {
+     "w": "nuts",
+     "pic": "Peanuts",
+     "q": "groundnuts peanuts"
+    },
+    {
+     "w": "net",
+     "pic": null,
+     "q": "football goal net"
+    }
+   ]
+  },
+  "o": {
+   "sound": "o",
+   "words": [
+    {
+     "w": "orange",
+     "pic": "Tangerine",
+     "q": "orange fruit"
+    },
+    {
+     "w": "owl",
+     "pic": "Owl",
+     "q": "owl"
+    },
+    {
+     "w": "octopus",
+     "pic": "Octopus",
+     "q": "octopus underwater"
+    }
+   ]
+  },
+  "p": {
+   "sound": "puh",
+   "words": [
+    {
+     "w": "pineapple",
+     "pic": "Pineapple",
+     "q": "pineapple"
+    },
+    {
+     "w": "parrot",
+     "pic": "Parrot",
+     "q": "parrot"
+    },
+    {
+     "w": "pen",
+     "pic": "Pen",
+     "q": "ballpoint pen"
+    }
+   ]
+  },
+  "q": {
+   "sound": "kwuh",
+   "words": [
+    {
+     "w": "quail",
+     "pic": null,
+     "q": "quail bird"
+    },
+    {
+     "w": "quilt",
+     "pic": null,
+     "q": "patchwork quilt"
+    }
+   ]
+  },
+  "r": {
+   "sound": "rrr",
+   "words": [
+    {
+     "w": "rabbit",
+     "pic": "Rabbit face",
+     "q": "rabbit"
+    },
+    {
+     "w": "rain",
+     "pic": "Cloud with rain",
+     "q": "rain falling"
+    },
+    {
+     "w": "rose",
+     "pic": "Rose",
+     "q": "red rose"
+    }
+   ]
+  },
+  "s": {
+   "sound": "sss",
+   "words": [
+    {
+     "w": "sun",
+     "pic": "Sun",
+     "q": "sunshine blue sky"
+    },
+    {
+     "w": "snake",
+     "pic": "Snake",
+     "q": "snake"
+    },
+    {
+     "w": "socks",
+     "pic": "Socks",
+     "q": "socks"
+    }
+   ]
+  },
+  "t": {
+   "sound": "tuh",
+   "words": [
+    {
+     "w": "tree",
+     "pic": "Deciduous tree",
+     "q": "tree"
+    },
+    {
+     "w": "tomato",
+     "pic": "Tomato",
+     "q": "tomato"
+    },
+    {
+     "w": "tiger",
+     "pic": "Tiger face",
+     "q": "tiger"
+    }
+   ]
+  },
+  "u": {
+   "sound": "uh",
+   "words": [
+    {
+     "w": "umbrella",
+     "pic": "Umbrella",
+     "q": "umbrella"
+    }
+   ]
+  },
+  "v": {
+   "sound": "vvv",
+   "words": [
+    {
+     "w": "van",
+     "pic": "Minibus",
+     "q": "van vehicle"
+    },
+    {
+     "w": "violin",
+     "pic": "Violin",
+     "q": "violin"
+    },
+    {
+     "w": "volcano",
+     "pic": "Volcano",
+     "q": "volcano"
+    }
+   ]
+  },
+  "w": {
+   "sound": "wuh",
+   "words": [
+    {
+     "w": "watch",
+     "pic": "Watch",
+     "q": "wrist watch"
+    },
+    {
+     "w": "whale",
+     "pic": "Spouting whale",
+     "q": "whale"
+    },
+    {
+     "w": "window",
+     "pic": "Window",
+     "q": "window"
+    }
+   ]
+  },
+  "x": {
+   "sound": "ks",
+   "words": [
+    {
+     "w": "x-ray",
+     "pic": "X-ray",
+     "q": "x-ray"
+    },
+    {
+     "w": "box",
+     "pic": "Package",
+     "q": "cardboard box",
+     "end": true
+    },
+    {
+     "w": "fox",
+     "pic": "Fox",
+     "q": "fox",
+     "end": true
+    }
+   ]
+  },
+  "y": {
+   "sound": "yuh",
+   "words": [
+    {
+     "w": "yam",
+     "pic": null,
+     "q": "yam tubers"
+    },
+    {
+     "w": "yo-yo",
+     "pic": "Yo-yo",
+     "q": "yo-yo toy"
+    },
+    {
+     "w": "yawn",
+     "pic": "Yawning face",
+     "q": "yawning cat"
+    }
+   ]
+  },
+  "z": {
+   "sound": "zzz",
+   "words": [
+    {
+     "w": "zebra",
+     "pic": "Zebra",
+     "q": "zebra"
+    },
+    {
+     "w": "zip",
+     "pic": "Zipper-mouth face",
+     "q": "zipper"
+    }
+   ]
+  }
+ },
+ "numbers": [
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten"
+ ],
+ "countThings": [
+  "Tangerine",
+  "Red apple",
+  "Baby chick",
+  "Soccer ball",
+  "Automobile",
+  "Banana",
+  "Fish",
+  "Star",
+  "Balloon",
+  "Lady beetle"
+ ],
+ "stickers": [
+  "Lion",
+  "Elephant",
+  "Giraffe",
+  "Monkey face",
+  "Turtle",
+  "Butterfly",
+  "Spouting whale",
+  "Parrot",
+  "Dolphin",
+  "Fox",
+  "Panda",
+  "Koala",
+  "Tiger face",
+  "Zebra",
+  "Flamingo",
+  "Octopus",
+  "Unicorn",
+  "Frog",
+  "Rabbit face",
+  "Dog face",
+  "Cat face",
+  "Chicken",
+  "Honeybee",
+  "Lady beetle",
+  "Tropical fish",
+  "Crab",
+  "Penguin",
+  "Owl",
+  "Bear",
+  "Cow face",
+  "Pig face",
+  "Ewe",
+  "Sauropod",
+  "T-rex",
+  "Rocket",
+  "Fire engine",
+  "Tractor",
+  "Guitar",
+  "Trophy",
+  "Crown"
+ ],
+ "buddies": [
+  "Honeybee",
+  "Butterfly",
+  "Lady beetle",
+  "Automobile",
+  "Rocket",
+  "Tropical fish"
+ ],
+ "extraPics": [
+  "Glowing star",
+  "Sponge",
+  "Pencil",
+  "House",
+  "Left arrow",
+  "Eyes",
+  "Speaker high volume",
+  "Repeat button",
+  "Play button",
+  "Gear",
+  "Party popper"
+ ]
 }

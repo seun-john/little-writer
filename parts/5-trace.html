@@ -163,14 +163,14 @@ function rewardCard(it,level,visit,sticker,word){
     (async()=>{await wait(1800);let box=$('rPics');if(!box)return;speak('count_them');await wait(1300);
       for(let k=1;k<=it.n;k++){box=$('rPics');if(!box||$('ov').hidden)return;
         box.insertAdjacentHTML('beforeend',`<span>${pic(thing)}</span>`);sfx.step(k);speak('n_'+k);await wait(850);}})();}
-  else if(word){mid=`<div class="pics">${pic(word.pic,word.word).replace('class="pic"','class="pic" style="font-size:96px"')}</div><div class="word">${wordHTML(word.word,it.id)}</div>`;extra=1500;}
+  else if(word){mid=`<div class="pics">${wordPic(word)}</div><div class="word">${wordHTML(word.word,it.id)}</div>`;extra=1500;}
   else mid=`<div class="word">${it.say}</div>`;
   showOverlay(`<div class="bigstars">${starStr(stars)}</div>
     <div class="glyphbox" style="color:var(${w.color})">${glyphSVG(it).replace('<svg','<svg style="height:100%"')}</div>
     ${mid}${stickerHTML(sticker)}
-    <div class="row"><button class="round" id="rAgain" aria-label="Again">🔁</button>
-    <button class="round go" id="rNext" aria-label="Next"><span>▶️</span></button>
-    <button class="round" id="rHome" aria-label="Home">🏠</button></div>`);
+    <div class="row"><button class="round" id="rAgain" aria-label="Again">${pic('Repeat button')}</button>
+    <button class="round go" id="rNext" aria-label="Next">${pic('Play button')}</button>
+    <button class="round" id="rHome" aria-label="Home">${pic('House')}</button></div>`);
   let timer=0;const stop=()=>clearTimeout(timer);
   $('rAgain').onclick=()=>{stop();startTrace(it,level,visit-1,false);};
   $('rNext').onclick=()=>{stop();go();};

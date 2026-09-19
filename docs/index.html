@@ -50,7 +50,7 @@ button:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
   font-family:var(--display);font-weight:700;font-size:22px;display:flex;align-items:center;gap:6px}
 
 /* home */
-.hello{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,48px);line-height:1;margin:6px 0 2px;text-wrap:balance}
+.hello{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,48px);line-height:1;margin:6px 0 14px;text-wrap:balance}
 .hello span{color:var(--coral)}
 .sub{color:var(--muted);margin:0 0 14px}
 .menu{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start;overflow-y:auto;padding-bottom:8px}
@@ -206,16 +206,53 @@ img.pic{width:1em;height:1em;object-fit:contain;vertical-align:middle;-webkit-us
   .card .word{font-size:26px}
   .card .row{margin-top:8px}
 }
+/* ---------- clay look: chunky, soft, toy-like; everything presses down when touched ---------- */
+.tile{box-shadow:inset 0 -7px 0 rgba(0,0,0,.14),inset 0 4px 0 rgba(255,255,255,.28),0 6px 0 rgba(0,0,0,.16);transition:transform .15s ease-out,box-shadow .15s ease-out}
+.tile:active{transform:translateY(4px) scale(.98);box-shadow:inset 0 -3px 0 rgba(0,0,0,.14),inset 0 3px 0 rgba(255,255,255,.28),0 2px 0 rgba(0,0,0,.16)}
+.round,.item,.ans,.pick,.chip,.pill{box-shadow:inset 0 -4px 0 color-mix(in srgb,var(--ink) 10%,transparent),0 4px 0 color-mix(in srgb,var(--ink) 14%,transparent);transition:transform .15s ease-out,box-shadow .15s ease-out}
+.round:active,.item:active,.ans:active,.pick:active,.chip:active{transform:translateY(3px);box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--ink) 10%,transparent),0 1px 0 color-mix(in srgb,var(--ink) 14%,transparent)}
+.round img.pic{font-size:34px}
+.pill img.pic{font-size:24px}
+.stars img.pic{font-size:18px}
+.card .bigstars img.pic{font-size:42px}
+.gear img.pic{font-size:26px}
+.phrases img.pic{font-size:20px}
+/* keep writing: the one big next step */
+.hero{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:28px;text-align:left;color:#fff;
+  background:var(--hero,var(--sky));box-shadow:inset 0 -8px 0 rgba(0,0,0,.14),inset 0 4px 0 rgba(255,255,255,.3),0 6px 0 rgba(0,0,0,.16);transition:transform .15s ease-out}
+.hero:active{transform:translateY(4px) scale(.99)}
+.heroglyph{flex:none;width:76px;height:76px;border-radius:22px;background:rgba(255,255,255,.95);color:var(--hero,var(--sky));display:grid;place-items:center;padding:6px}
+.heroglyph svg{height:100%;width:auto}
+.herotext{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.herotext b{font:700 28px/1 var(--display)}
+.herotext small{font-size:15px;opacity:.95}
+.herotext .meter{background:rgba(255,255,255,.35);margin:4px 0 0;height:12px}
+.herotext .meter i{background:#fff}
+.heroplay{flex:none;font-size:52px;animation:bob 1.6s ease-in-out infinite}
+.heroplay img.pic{font-size:52px}
+.wmeter{margin:6px 0 4px}
+/* real photos: framed like a printed picture */
+img.photo{width:1em;height:1em;object-fit:cover;border-radius:18%;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.25);background:#fff;vertical-align:middle;pointer-events:none}
+.pick img.photo{font-size:clamp(84px,25vw,150px)}
+.pick{gap:6px;padding:12px 4px}
+.pick small{font-size:18px}
+#abc .picks{margin-block:auto}
+.card .pics img.photo{font-size:150px}
+@media (orientation:landscape) and (max-height:540px){.card .pics img.photo{font-size:96px!important}.pick img.photo{font-size:min(22vh,90px)}}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;height:100%}
 @media (min-width:700px){ .menu{grid-template-columns:repeat(3,1fr)} .tile.wide{grid-column:span 1} }
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
 
 <section class="screen" id="home">
-  <div class="bar"><button class="gear" id="gear" aria-label="Grown-ups (press and hold)">⚙️</button><div class="grow"></div><div class="pill" id="homeStars">⭐ 0</div><button class="round" id="buddyBtn" aria-label="Change buddy"></button></div>
+  <div class="bar"><button class="gear" id="gear" data-ico="Gear" aria-label="Grown-ups (press and hold)"></button><div class="grow"></div><div class="pill" id="homeStars"></div><button class="round" id="buddyBtn" aria-label="Change buddy"></button></div>
   <h1 class="hello" id="hello">Let's <span>write!</span></h1>
-  <p class="sub">Trace, count and play</p>
   <div class="menu">
+    <button class="hero" id="hero" aria-label="Keep writing">
+      <span class="heroglyph" id="heroGlyph"></span>
+      <span class="herotext"><b>Keep writing!</b><small id="heroSub"></small><span class="meter"><i id="heroMeter"></i></span></span>
+      <span class="heroplay" data-ico="Play button"></span>
+    </button>
     <button class="tile t-lines" data-go="lines"><div class="art" id="artLines"></div><div><b>Lines</b><br><small>| — / ○</small></div></button>
     <button class="tile t-num" data-go="numbers"><div class="art" id="artNum"></div><div><b>Numbers</b><br><small>1 to 10</small></div></button>
     <button class="tile t-let" data-go="letters"><div class="art" id="artLet"></div><div><b>Letters</b><br><small>a to z</small></div></button>
@@ -229,50 +266,51 @@ img.pic{width:1em;height:1em;object-fit:contain;vertical-align:middle;-webkit-us
 </section>
 
 <section class="screen" id="world" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="wtitle grow" id="wTitle">Numbers</div></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="wtitle grow" id="wTitle">Numbers</div><div class="pill" id="wStars"></div></div>
+  <div class="meter wmeter"><i id="wMeter"></i></div>
   <div class="items" id="items"></div>
 </section>
 
 <section class="screen" id="trace" hidden>
   <div class="bar">
-    <button class="round" id="tBack" aria-label="Back">⬅️</button>
+    <button class="round" id="tBack" data-ico="Left arrow" aria-label="Back"></button>
     <div class="grow" style="text-align:center"><span class="stars pill" id="tStars" style="display:inline-flex"></span></div>
     <button class="round" id="tErase" aria-label="Rub out and start again"></button>
-    <button class="round" id="tWatch" aria-label="Watch again">👀</button>
+    <button class="round" id="tWatch" data-ico="Eyes" aria-label="Watch again"></button>
   </div>
   <div class="chips" id="chips"></div>
   <div class="stage" id="stageBox"><canvas id="cv"></canvas><div class="turnhint" id="turnHint">Turn the phone sideways to write more in a row</div></div>
 </section>
 
 <section class="screen" id="count" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="cDots"></div><button class="round" id="cSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="cDots"></div><button class="round" id="cSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="prompt" id="cPrompt">Tap each one to count!</div>
   <div class="countbox" id="cBox"></div>
   <div class="answers" id="cAns"></div>
 </section>
 
 <section class="screen" id="math" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="mDots"></div><button class="round" id="mSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="mDots"></div><button class="round" id="mSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="eq" id="mEq"></div>
   <div class="countbox mathbox" id="mBox"></div>
   <div class="answers" id="mAns"></div>
 </section>
 
 <section class="screen" id="abc" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="aDots"></div><button class="round" id="aSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="aDots"></div><button class="round" id="aSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="bigletter" id="aLetter"></div>
   <div class="prompt" id="aPrompt"></div>
   <div class="picks" id="aPicks"></div>
 </section>
 
 <section class="screen" id="pop" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="pDots"></div><button class="round" id="pSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="pDots"></div><button class="round" id="pSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="prompt" id="pPrompt"></div>
   <div class="sky" id="sky"></div>
 </section>
 
 <section class="screen" id="stickers" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="wtitle grow">Sticker book</div><div class="pill" id="sStars">⭐ 0</div></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="wtitle grow">Sticker book</div><div class="pill" id="sStars"></div></div>
   <p class="sub" id="sNext" style="margin:6px 0 0"></p>
   <div class="meter"><i id="sMeter"></i></div>
   <div class="book" id="book"></div>
@@ -285,7 +323,7 @@ img.pic{width:1em;height:1em;object-fit:contain;vertical-align:middle;-webkit-us
 <script>
 /* content.js (built by build.py) provides CONTENT (words, picture names), PHRASES (voice line texts) and PICS (pictures). */
 window.CONTENT=window.CONTENT||{letters:{},numbers:[],countThings:[],stickers:[],buddies:[]};
-window.PHRASES=window.PHRASES||{};window.PICS=window.PICS||{};
+window.PHRASES=window.PHRASES||{};window.PICS=window.PICS||{};window.PHOTOS=window.PHOTOS||{};
 
 /* ---------- building blocks: words shown on the chips and the voice line for each ---------- */
 const BLOCKS = {
@@ -366,7 +404,7 @@ const WORLDS = {
     items:NUMBER_STROKES.map((strokes,i)=>({id:String(i+1),n:i+1,say:NUMWORDS[i],intro:'wrn_'+(i+1),strokes}))},
   letters:{title:'Letters', color:'--coral', box:LET,
     items:Object.keys(LETTER_STROKES).map(l=>({id:l,say:'the letter '+l.toUpperCase(),intro:'wr_'+l,strokes:LETTER_STROKES[l],
-      words:((CONTENT.letters[l]||{}).words||[]).map((w,i)=>({word:w[0],pic:w[1],end:!!w[2],key:`is_${l}_${i}`}))}))}
+      words:((CONTENT.letters[l]||{}).words||[]).map((w,i)=>({word:w.w,pic:w.pic,end:!!w.end,key:`is_${l}_${i}`}))}))}
 };
 const STAGES=['Trace the road','Follow the dots','All by myself'];
 const INK=['#ff6b4a','#3b8df0','#2bb673','#8a5cf0'];
@@ -413,7 +451,9 @@ const blockIcon=k=>`<svg viewBox="0 0 24 24"><path d="${BLOCKS[k].icon}" fill="n
 
 /* ---------- pictures ---------- */
 const picKey=name=>name.toLowerCase().replace(/ /g,'_');
-const pic=(name,alt='')=>PICS[picKey(name)]?`<img class="pic" src="${PICS[picKey(name)]}" alt="${alt}">`:'';
+const pic=(name,alt='')=>name&&PICS[picKey(name)]?`<img class="pic" src="${PICS[picKey(name)]}" alt="${alt}">`:'';
+/* a word's picture: the real photo once photos.js has loaded, the cartoon until then */
+const wordPic=w=>PHOTOS[w.word]?`<img class="photo" src="${PHOTOS[w.word]}" alt="${w.word}">`:(pic(w.pic,w.word)||pic('Star',w.word));
 const STICKERS=CONTENT.stickers;
 const BUDDY_IMGS=CONTENT.buddies.map(n=>{const i=new Image();i.src=PICS[picKey(n)]||'';return i;});
 
@@ -492,11 +532,26 @@ document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>goHome());
 function goHome(){
   show('home');
   $('hello').innerHTML=S.name?`Hi, <span>${escapeHTML(S.name)}!</span>`:`Let's <span>write!</span>`;
-  $('homeStars').textContent='⭐ '+totalStars();
+  $('homeStars').innerHTML=pic('Star')+' '+totalStars();
+  renderHero();
   $('buddyBtn').innerHTML=pic(CONTENT.buddies[S.buddy%CONTENT.buddies.length],'buddy');
   const own=stickersOwned();
   $('stickPeek').innerHTML=own?STICKERS.slice(Math.max(0,own-4),own).map(n=>pic(n)).join(''):pic('Glowing star');
   $('stickSub').textContent=`${own} of ${STICKERS.length} collected`;
+}
+/* the one obvious next step: the first shape not yet practised enough, strokes then numbers then letters */
+function nextToPractise(){
+  const need=Math.min(3,S.reps||2),order=['lines','numbers','letters'].flatMap(k=>WORLDS[k].items);
+  return order.find(i=>itemStars(i.id)<need)||order.find(i=>itemStars(i.id)<3)||WORLDS.letters.items[0];
+}
+function renderHero(){
+  const it=nextToPractise(),w=WORLDS[it.world],need=Math.min(3,S.reps||2);
+  const done=w.items.filter(i=>itemStars(i.id)>=need).length;
+  $('hero').style.setProperty('--hero',`var(${w.color})`);
+  $('heroGlyph').innerHTML=glyphSVG(it,'currentColor',11);
+  $('heroSub').textContent=`${w.title}: ${done} of ${w.items.length} done`;
+  $('heroMeter').style.width=(100*done/w.items.length)+'%';
+  $('hero').onclick=()=>startTrace(it,Math.min(2,itemStars(it.id)),0,true);
 }
 function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 $('artLines').innerHTML=['stand','slantL','circle'].map(id=>glyphSVG(findItem(id),'#fff',11)).join('');
@@ -504,16 +559,17 @@ $('artNum').innerHTML=['1','2','3'].map(id=>glyphSVG(findItem(id),'#fff',11)).jo
 $('artLet').innerHTML=['a','b','c'].map(id=>glyphSVG(findItem(id),'#fff',11)).join('');
 document.querySelectorAll('[data-pics]').forEach(el=>el.innerHTML=el.dataset.pics.split(',').map(n=>pic(n)).join(''));
 $('tErase').innerHTML=pic('Sponge','rub out');
+document.querySelectorAll('[data-ico]').forEach(el=>el.innerHTML=pic(el.dataset.ico));
 $('buddyBtn').onclick=()=>{S.buddy=(S.buddy+1)%CONTENT.buddies.length;save();$('buddyBtn').innerHTML=pic(CONTENT.buddies[S.buddy],'buddy');sfx.tick();};
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
   const g=b.dataset.go;
-  if(WORLDS[g])openWorld(g);
+  if(WORLDS[g]){openWorld(g);speak('t_'+g);}
   else if(g==='count')startCount();
   else if(g==='add')startMath('add');
   else if(g==='sub')startMath('sub');
   else if(g==='abc')startAbc();
-  else if(g==='pop')choosePop();
-  else if(g==='stickers')openStickers();
+  else if(g==='pop'){choosePop();speak('t_pop');}
+  else if(g==='stickers'){openStickers();speak('t_stickers');}
 });
 
 /* ---------- world grid ---------- */
@@ -521,13 +577,15 @@ let curWorld='numbers';
 function openWorld(wk){
   curWorld=wk;show('world');
   const w=WORLDS[wk];$('wTitle').textContent=w.title;
+  const got=w.items.reduce((a,i)=>a+itemStars(i.id),0),max=w.items.length*3;
+  $('wStars').innerHTML=pic('Star')+` ${got}/${max}`;$('wMeter').style.width=(100*got/max)+'%';
   const nextIt=w.items.find(i=>itemStars(i.id)<1)||w.items.find(i=>itemStars(i.id)<3);
   $('items').innerHTML=w.items.map(it=>`<button class="item${it===nextIt?' next':''}" data-id="${it.id}" style="color:var(${w.color})" aria-label="${it.say}">
     ${glyphSVG(it)}<span class="stars">${starStr(itemStars(it.id))}</span></button>`).join('');
   $('items').querySelectorAll('.item').forEach(b=>b.onclick=()=>{const it=findItem(b.dataset.id);startTrace(it,Math.min(2,itemStars(it.id)));});
   nextIt&&$('items').querySelector('.next')?.scrollIntoView({block:'nearest'});
 }
-const starStr=n=>[0,1,2].map(i=>`<span class="${i<n?'':'off'}">⭐</span>`).join('');
+const starStr=n=>[0,1,2].map(i=>`<span class="${i<n?'':'off'}">${pic('Star')}</span>`).join('');
 
 /* ---------- overlay + confetti ---------- */
 function showOverlay(html){$('ovCard').innerHTML=html;$('ov').hidden=false;}
@@ -721,14 +779,14 @@ function rewardCard(it,level,visit,sticker,word){
     (async()=>{await wait(1800);let box=$('rPics');if(!box)return;speak('count_them');await wait(1300);
       for(let k=1;k<=it.n;k++){box=$('rPics');if(!box||$('ov').hidden)return;
         box.insertAdjacentHTML('beforeend',`<span>${pic(thing)}</span>`);sfx.step(k);speak('n_'+k);await wait(850);}})();}
-  else if(word){mid=`<div class="pics">${pic(word.pic,word.word).replace('class="pic"','class="pic" style="font-size:96px"')}</div><div class="word">${wordHTML(word.word,it.id)}</div>`;extra=1500;}
+  else if(word){mid=`<div class="pics">${wordPic(word)}</div><div class="word">${wordHTML(word.word,it.id)}</div>`;extra=1500;}
   else mid=`<div class="word">${it.say}</div>`;
   showOverlay(`<div class="bigstars">${starStr(stars)}</div>
     <div class="glyphbox" style="color:var(${w.color})">${glyphSVG(it).replace('<svg','<svg style="height:100%"')}</div>
     ${mid}${stickerHTML(sticker)}
-    <div class="row"><button class="round" id="rAgain" aria-label="Again">🔁</button>
-    <button class="round go" id="rNext" aria-label="Next"><span>▶️</span></button>
-    <button class="round" id="rHome" aria-label="Home">🏠</button></div>`);
+    <div class="row"><button class="round" id="rAgain" aria-label="Again">${pic('Repeat button')}</button>
+    <button class="round go" id="rNext" aria-label="Next">${pic('Play button')}</button>
+    <button class="round" id="rHome" aria-label="Home">${pic('House')}</button></div>`);
   let timer=0;const stop=()=>clearTimeout(timer);
   $('rAgain').onclick=()=>{stop();startTrace(it,level,visit-1,false);};
   $('rNext').onclick=()=>{stop();go();};
@@ -816,8 +874,8 @@ function shakeEl(b,cls='wrong'){b.classList.remove(cls);void b.offsetWidth;b.cla
 function roundWin(title,again){
   sfx.win();confetti(160);const sticker=award(1);
   speak([praiseKey(),'star',sticker?'sticker':null]);
-  setTimeout(()=>{showOverlay(`<div class="bigstars">⭐</div><div class="big" style="font-size:48px">${title}</div>${stickerHTML(sticker)}
-    <div class="row"><button class="round" id="gAgain" aria-label="Play again">🔁</button><button class="round" id="gHome" aria-label="Home">🏠</button></div>`);
+  setTimeout(()=>{showOverlay(`<div class="bigstars">${pic('Star')}</div><div class="big" style="font-size:48px">${title}</div>${stickerHTML(sticker)}
+    <div class="row"><button class="round" id="gAgain" aria-label="Play again">${pic('Repeat button')}</button><button class="round" id="gHome" aria-label="Home">${pic('House')}</button></div>`);
     $('gAgain').onclick=again;$('gHome').onclick=goHome;},900);
 }
 /* three answer choices around the right number, all between 1 and 10 */
@@ -905,7 +963,7 @@ function nextAbc(){
   $('aPrompt').textContent=`${it.id} is for …?`;
   const others=shuffle(LETS.filter(x=>x!==it)).slice(0,2).map(x=>rnd(startWords(x)));
   const opts=shuffle([right,...others]);
-  $('aPicks').innerHTML=opts.map((o,i)=>`<button class="pick" data-i="${i}" aria-label="${o.word}">${pic(o.pic,o.word)}<small>${o.word}</small></button>`).join('');
+  $('aPicks').innerHTML=opts.map((o,i)=>`<button class="pick" data-i="${i}" aria-label="${o.word}">${wordPic(o)}<small>${o.word}</small></button>`).join('');
   speak('q_'+it.id);
   $('aPicks').querySelectorAll('.pick').forEach(b=>b.onclick=()=>{
     if(!Ab)return;const o=opts[+b.dataset.i];
@@ -969,7 +1027,7 @@ $('pSay').onclick=()=>{if(Pp)speak(findKey(Pp.target));};
 /* ---------- Sticker book ---------- */
 function openStickers(){
   show('stickers');const tot=totalStars(),own=stickersOwned();
-  $('sStars').textContent='⭐ '+tot;
+  $('sStars').innerHTML=pic('Star')+' '+tot;
   const need=3-(tot%3);
   $('sNext').textContent=own>=STICKERS.length?'Every sticker collected!':`${need} more star${need>1?'s':''} for a new sticker`;
   $('sMeter').style.width=(own>=STICKERS.length?100:((tot%3)/3*100))+'%';
@@ -989,23 +1047,31 @@ function openParent(){
     <label for="pReps">Rows to practise before the next one <select id="pReps">${[1,2,3].map(n=>`<option value="${n}" ${n===(S.reps||2)?'selected':''}>${n}</option>`).join('')}</select></label>
     <label for="pSound">Sound effects <input type="checkbox" id="pSound" ${S.sound?'checked':''}></label>
     <p class="sub" style="text-align:left;font-size:15px">Stars: ${totalStars()} · Stickers: ${stickersOwned()}/${STICKERS.length}. Progress is saved on this phone.${window.CLIPS?'':' The recorded voice is still loading; the phone\'s own voice is used until then.'}</p>
-    <div class="row" style="flex-wrap:wrap"><button class="textbtn" id="pLines">Hear every voice line</button><button class="textbtn danger" id="pReset">Reset progress</button><button class="textbtn" id="pDone" style="background:var(--leaf);color:#fff">Done</button></div></div>`);
+    <div class="row" style="flex-wrap:wrap"><button class="textbtn" id="pLines">Hear every voice line</button><button class="textbtn" id="pCred">Photo credits</button><button class="textbtn danger" id="pReset">Reset progress</button><button class="textbtn" id="pDone" style="background:var(--leaf);color:#fff">Done</button></div></div>`);
   const keep=()=>{S.name=$('pName').value.trim();S.voice=$('pVoice').checked;S.phonics=$('pPhon').checked;S.sound=$('pSound').checked;S.reps=+$('pReps').value;save();};
   $('pDone').onclick=()=>{keep();goHome();};
   $('pLines').onclick=()=>{keep();openPhraseList();};
+  $('pCred').onclick=()=>{keep();openCredits();};
   $('pReset').onclick=()=>{if(confirm('Clear all stars and stickers on this phone?')){S.stars={};S.bonus=0;S.seen=0;save();goHome();}};
+}
+function openCredits(){
+  const c=CONTENT.photoCredits||[];
+  showOverlay(`<div class="big" style="font-size:28px">Photo credits</div><p class="sub" style="font-size:15px">Real photos are shared by their photographers under Creative Commons licences. Cartoon pictures: Microsoft Fluent Emoji (MIT). Voice: Microsoft neural voice Ezinne.</p>
+    <div class="phrases">${c.map(x=>`<div style="padding:8px 10px;border-radius:12px;background:var(--road);font-size:14px;text-align:left"><b>${escapeHTML(x.word)}</b>: ${escapeHTML(x.text)}</div>`).join('')}</div>
+    <div class="row"><button class="textbtn" id="crBack">Back</button></div>`);
+  $('crBack').onclick=openParent;
 }
 function openPhraseList(){
   const keys=Object.keys(PHRASES);
   showOverlay(`<div class="big" style="font-size:28px">Voice lines</div><p class="sub" style="font-size:15px">Tap a line to hear it. Tell Claude the ones that sound wrong.</p>
-    <div class="phrases">${keys.map(k=>`<button data-k="${k}">▶️ <span>${escapeHTML(PHRASES[k])}</span></button>`).join('')}</div>
+    <div class="phrases">${keys.map(k=>`<button data-k="${k}">${pic('Play button')} <span>${escapeHTML(PHRASES[k])}</span></button>`).join('')}</div>
     <div class="row"><button class="textbtn" id="plBack">Back</button></div>`);
   $('ovCard').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>speak(b.dataset.k));
   $('plBack').onclick=openParent;
 }
 
 /* the recorded voice is big, so it loads after the game is on screen */
-function loadVoice(){const s=document.createElement('script');s.src='voice.js';s.async=true;document.body.appendChild(s);}
+function loadVoice(){for(const f of ['photos.js','voice.js']){const s=document.createElement('script');s.src=f;s.async=true;document.body.appendChild(s);}}
 goHome();
 setTimeout(loadVoice,50);
 /* installed app: keep working offline (skipped where the page can't register one) */

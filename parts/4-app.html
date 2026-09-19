@@ -17,11 +17,26 @@ document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>goHome());
 function goHome(){
   show('home');
   $('hello').innerHTML=S.name?`Hi, <span>${escapeHTML(S.name)}!</span>`:`Let's <span>write!</span>`;
-  $('homeStars').textContent='⭐ '+totalStars();
+  $('homeStars').innerHTML=pic('Star')+' '+totalStars();
+  renderHero();
   $('buddyBtn').innerHTML=pic(CONTENT.buddies[S.buddy%CONTENT.buddies.length],'buddy');
   const own=stickersOwned();
   $('stickPeek').innerHTML=own?STICKERS.slice(Math.max(0,own-4),own).map(n=>pic(n)).join(''):pic('Glowing star');
   $('stickSub').textContent=`${own} of ${STICKERS.length} collected`;
+}
+/* the one obvious next step: the first shape not yet practised enough, strokes then numbers then letters */
+function nextToPractise(){
+  const need=Math.min(3,S.reps||2),order=['lines','numbers','letters'].flatMap(k=>WORLDS[k].items);
+  return order.find(i=>itemStars(i.id)<need)||order.find(i=>itemStars(i.id)<3)||WORLDS.letters.items[0];
+}
+function renderHero(){
+  const it=nextToPractise(),w=WORLDS[it.world],need=Math.min(3,S.reps||2);
+  const done=w.items.filter(i=>itemStars(i.id)>=need).length;
+  $('hero').style.setProperty('--hero',`var(${w.color})`);
+  $('heroGlyph').innerHTML=glyphSVG(it,'currentColor',11);
+  $('heroSub').textContent=`${w.title}: ${done} of ${w.items.length} done`;
+  $('heroMeter').style.width=(100*done/w.items.length)+'%';
+  $('hero').onclick=()=>startTrace(it,Math.min(2,itemStars(it.id)),0,true);
 }
 function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 $('artLines').innerHTML=['stand','slantL','circle'].map(id=>glyphSVG(findItem(id),'#fff',11)).join('');
@@ -29,16 +44,17 @@ $('artNum').innerHTML=['1','2','3'].map(id=>glyphSVG(findItem(id),'#fff',11)).jo
 $('artLet').innerHTML=['a','b','c'].map(id=>glyphSVG(findItem(id),'#fff',11)).join('');
 document.querySelectorAll('[data-pics]').forEach(el=>el.innerHTML=el.dataset.pics.split(',').map(n=>pic(n)).join(''));
 $('tErase').innerHTML=pic('Sponge','rub out');
+document.querySelectorAll('[data-ico]').forEach(el=>el.innerHTML=pic(el.dataset.ico));
 $('buddyBtn').onclick=()=>{S.buddy=(S.buddy+1)%CONTENT.buddies.length;save();$('buddyBtn').innerHTML=pic(CONTENT.buddies[S.buddy],'buddy');sfx.tick();};
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
   const g=b.dataset.go;
-  if(WORLDS[g])openWorld(g);
+  if(WORLDS[g]){openWorld(g);speak('t_'+g);}
   else if(g==='count')startCount();
   else if(g==='add')startMath('add');
   else if(g==='sub')startMath('sub');
   else if(g==='abc')startAbc();
-  else if(g==='pop')choosePop();
-  else if(g==='stickers')openStickers();
+  else if(g==='pop'){choosePop();speak('t_pop');}
+  else if(g==='stickers'){openStickers();speak('t_stickers');}
 });
 
 /* ---------- world grid ---------- */
@@ -46,13 +62,15 @@ let curWorld='numbers';
 function openWorld(wk){
   curWorld=wk;show('world');
   const w=WORLDS[wk];$('wTitle').textContent=w.title;
+  const got=w.items.reduce((a,i)=>a+itemStars(i.id),0),max=w.items.length*3;
+  $('wStars').innerHTML=pic('Star')+` ${got}/${max}`;$('wMeter').style.width=(100*got/max)+'%';
   const nextIt=w.items.find(i=>itemStars(i.id)<1)||w.items.find(i=>itemStars(i.id)<3);
   $('items').innerHTML=w.items.map(it=>`<button class="item${it===nextIt?' next':''}" data-id="${it.id}" style="color:var(${w.color})" aria-label="${it.say}">
     ${glyphSVG(it)}<span class="stars">${starStr(itemStars(it.id))}</span></button>`).join('');
   $('items').querySelectorAll('.item').forEach(b=>b.onclick=()=>{const it=findItem(b.dataset.id);startTrace(it,Math.min(2,itemStars(it.id)));});
   nextIt&&$('items').querySelector('.next')?.scrollIntoView({block:'nearest'});
 }
-const starStr=n=>[0,1,2].map(i=>`<span class="${i<n?'':'off'}">⭐</span>`).join('');
+const starStr=n=>[0,1,2].map(i=>`<span class="${i<n?'':'off'}">${pic('Star')}</span>`).join('');
 
 /* ---------- overlay + confetti ---------- */
 function showOverlay(html){$('ovCard').innerHTML=html;$('ov').hidden=false;}

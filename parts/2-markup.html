@@ -1,9 +1,13 @@
 
 <section class="screen" id="home">
-  <div class="bar"><button class="gear" id="gear" aria-label="Grown-ups (press and hold)">⚙️</button><div class="grow"></div><div class="pill" id="homeStars">⭐ 0</div><button class="round" id="buddyBtn" aria-label="Change buddy"></button></div>
+  <div class="bar"><button class="gear" id="gear" data-ico="Gear" aria-label="Grown-ups (press and hold)"></button><div class="grow"></div><div class="pill" id="homeStars"></div><button class="round" id="buddyBtn" aria-label="Change buddy"></button></div>
   <h1 class="hello" id="hello">Let's <span>write!</span></h1>
-  <p class="sub">Trace, count and play</p>
   <div class="menu">
+    <button class="hero" id="hero" aria-label="Keep writing">
+      <span class="heroglyph" id="heroGlyph"></span>
+      <span class="herotext"><b>Keep writing!</b><small id="heroSub"></small><span class="meter"><i id="heroMeter"></i></span></span>
+      <span class="heroplay" data-ico="Play button"></span>
+    </button>
     <button class="tile t-lines" data-go="lines"><div class="art" id="artLines"></div><div><b>Lines</b><br><small>| — / ○</small></div></button>
     <button class="tile t-num" data-go="numbers"><div class="art" id="artNum"></div><div><b>Numbers</b><br><small>1 to 10</small></div></button>
     <button class="tile t-let" data-go="letters"><div class="art" id="artLet"></div><div><b>Letters</b><br><small>a to z</small></div></button>
@@ -17,50 +21,51 @@
 </section>
 
 <section class="screen" id="world" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="wtitle grow" id="wTitle">Numbers</div></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="wtitle grow" id="wTitle">Numbers</div><div class="pill" id="wStars"></div></div>
+  <div class="meter wmeter"><i id="wMeter"></i></div>
   <div class="items" id="items"></div>
 </section>
 
 <section class="screen" id="trace" hidden>
   <div class="bar">
-    <button class="round" id="tBack" aria-label="Back">⬅️</button>
+    <button class="round" id="tBack" data-ico="Left arrow" aria-label="Back"></button>
     <div class="grow" style="text-align:center"><span class="stars pill" id="tStars" style="display:inline-flex"></span></div>
     <button class="round" id="tErase" aria-label="Rub out and start again"></button>
-    <button class="round" id="tWatch" aria-label="Watch again">👀</button>
+    <button class="round" id="tWatch" data-ico="Eyes" aria-label="Watch again"></button>
   </div>
   <div class="chips" id="chips"></div>
   <div class="stage" id="stageBox"><canvas id="cv"></canvas><div class="turnhint" id="turnHint">Turn the phone sideways to write more in a row</div></div>
 </section>
 
 <section class="screen" id="count" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="cDots"></div><button class="round" id="cSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="cDots"></div><button class="round" id="cSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="prompt" id="cPrompt">Tap each one to count!</div>
   <div class="countbox" id="cBox"></div>
   <div class="answers" id="cAns"></div>
 </section>
 
 <section class="screen" id="math" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="mDots"></div><button class="round" id="mSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="mDots"></div><button class="round" id="mSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="eq" id="mEq"></div>
   <div class="countbox mathbox" id="mBox"></div>
   <div class="answers" id="mAns"></div>
 </section>
 
 <section class="screen" id="abc" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="aDots"></div><button class="round" id="aSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="aDots"></div><button class="round" id="aSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="bigletter" id="aLetter"></div>
   <div class="prompt" id="aPrompt"></div>
   <div class="picks" id="aPicks"></div>
 </section>
 
 <section class="screen" id="pop" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="grow"></div><div class="dots" id="pDots"></div><button class="round" id="pSay" aria-label="Say again">🔊</button></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="grow"></div><div class="dots" id="pDots"></div><button class="round" id="pSay" data-ico="Speaker high volume" aria-label="Say again"></button></div>
   <div class="prompt" id="pPrompt"></div>
   <div class="sky" id="sky"></div>
 </section>
 
 <section class="screen" id="stickers" hidden>
-  <div class="bar"><button class="round" data-home aria-label="Home">🏠</button><div class="wtitle grow">Sticker book</div><div class="pill" id="sStars">⭐ 0</div></div>
+  <div class="bar"><button class="round" data-home data-ico="House" aria-label="Home"></button><div class="wtitle grow">Sticker book</div><div class="pill" id="sStars"></div></div>
   <p class="sub" id="sNext" style="margin:6px 0 0"></p>
   <div class="meter"><i id="sMeter"></i></div>
   <div class="book" id="book"></div>

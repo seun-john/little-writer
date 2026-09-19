@@ -42,7 +42,7 @@ def fetch(name):
 
 names = set(C["countThings"] + C["stickers"] + C["buddies"] + C["extraPics"])
 for l in C["letters"].values():
-    names.update(w[1] for w in l["words"])
+    names.update(w["pic"] for w in l["words"] if w.get("pic"))
 
 missing = []
 for name in sorted(names):

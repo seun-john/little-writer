@@ -50,7 +50,7 @@ button:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
   font-family:var(--display);font-weight:700;font-size:22px;display:flex;align-items:center;gap:6px}
 
 /* home */
-.hello{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,48px);line-height:1;margin:6px 0 2px;text-wrap:balance}
+.hello{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,48px);line-height:1;margin:6px 0 14px;text-wrap:balance}
 .hello span{color:var(--coral)}
 .sub{color:var(--muted);margin:0 0 14px}
 .menu{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start;overflow-y:auto;padding-bottom:8px}
@@ -206,6 +206,39 @@ img.pic{width:1em;height:1em;object-fit:contain;vertical-align:middle;-webkit-us
   .card .word{font-size:26px}
   .card .row{margin-top:8px}
 }
+/* ---------- clay look: chunky, soft, toy-like; everything presses down when touched ---------- */
+.tile{box-shadow:inset 0 -7px 0 rgba(0,0,0,.14),inset 0 4px 0 rgba(255,255,255,.28),0 6px 0 rgba(0,0,0,.16);transition:transform .15s ease-out,box-shadow .15s ease-out}
+.tile:active{transform:translateY(4px) scale(.98);box-shadow:inset 0 -3px 0 rgba(0,0,0,.14),inset 0 3px 0 rgba(255,255,255,.28),0 2px 0 rgba(0,0,0,.16)}
+.round,.item,.ans,.pick,.chip,.pill{box-shadow:inset 0 -4px 0 color-mix(in srgb,var(--ink) 10%,transparent),0 4px 0 color-mix(in srgb,var(--ink) 14%,transparent);transition:transform .15s ease-out,box-shadow .15s ease-out}
+.round:active,.item:active,.ans:active,.pick:active,.chip:active{transform:translateY(3px);box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--ink) 10%,transparent),0 1px 0 color-mix(in srgb,var(--ink) 14%,transparent)}
+.round img.pic{font-size:34px}
+.pill img.pic{font-size:24px}
+.stars img.pic{font-size:18px}
+.card .bigstars img.pic{font-size:42px}
+.gear img.pic{font-size:26px}
+.phrases img.pic{font-size:20px}
+/* keep writing: the one big next step */
+.hero{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:28px;text-align:left;color:#fff;
+  background:var(--hero,var(--sky));box-shadow:inset 0 -8px 0 rgba(0,0,0,.14),inset 0 4px 0 rgba(255,255,255,.3),0 6px 0 rgba(0,0,0,.16);transition:transform .15s ease-out}
+.hero:active{transform:translateY(4px) scale(.99)}
+.heroglyph{flex:none;width:76px;height:76px;border-radius:22px;background:rgba(255,255,255,.95);color:var(--hero,var(--sky));display:grid;place-items:center;padding:6px}
+.heroglyph svg{height:100%;width:auto}
+.herotext{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.herotext b{font:700 28px/1 var(--display)}
+.herotext small{font-size:15px;opacity:.95}
+.herotext .meter{background:rgba(255,255,255,.35);margin:4px 0 0;height:12px}
+.herotext .meter i{background:#fff}
+.heroplay{flex:none;font-size:52px;animation:bob 1.6s ease-in-out infinite}
+.heroplay img.pic{font-size:52px}
+.wmeter{margin:6px 0 4px}
+/* real photos: framed like a printed picture */
+img.photo{width:1em;height:1em;object-fit:cover;border-radius:18%;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.25);background:#fff;vertical-align:middle;pointer-events:none}
+.pick img.photo{font-size:clamp(84px,25vw,150px)}
+.pick{gap:6px;padding:12px 4px}
+.pick small{font-size:18px}
+#abc .picks{margin-block:auto}
+.card .pics img.photo{font-size:150px}
+@media (orientation:landscape) and (max-height:540px){.card .pics img.photo{font-size:96px!important}.pick img.photo{font-size:min(22vh,90px)}}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;height:100%}
 @media (min-width:700px){ .menu{grid-template-columns:repeat(3,1fr)} .tile.wide{grid-column:span 1} }
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }

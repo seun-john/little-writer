@@ -11,7 +11,9 @@ A talking handwriting game for nursery children, built for phones.
 ## Building
 
 ```
-python tools/fetch_pics.py   # pictures listed in content/content.json
+python tools/fetch_pics.py   # cartoon pictures listed in content/content.json
+python tools/find_photos.py  # photo candidates to choose from (contact sheets)
+python tools/pick_photos.py  # chosen photos in content/picks.json -> assets/photos
 python tools/make_audio.py   # voice lines
 python build.py              # writes the app to docs/
 ```
@@ -20,6 +22,7 @@ Words, pictures and letter sounds live in `content/content.json`; the game itsel
 
 ## Credits
 
-- Pictures: [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT licence)
+- Photos: openly licensed (CC0, CC BY, CC BY-SA) photos found through [Openverse](https://openverse.org); each photographer is credited in `content/photos.json` and in the app under Grown-ups → Photo credits
+- Cartoon pictures and icons: [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT licence)
 - Voice: Microsoft neural voice en-NG-Ezinne, generated with [edge-tts](https://github.com/rany2/edge-tts)
 - Font: [Andika](https://fonts.google.com/specimen/Andika) by SIL (Open Font License)

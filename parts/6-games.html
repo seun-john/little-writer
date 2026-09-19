@@ -8,8 +8,8 @@ function shakeEl(b,cls='wrong'){b.classList.remove(cls);void b.offsetWidth;b.cla
 function roundWin(title,again){
   sfx.win();confetti(160);const sticker=award(1);
   speak([praiseKey(),'star',sticker?'sticker':null]);
-  setTimeout(()=>{showOverlay(`<div class="bigstars">⭐</div><div class="big" style="font-size:48px">${title}</div>${stickerHTML(sticker)}
-    <div class="row"><button class="round" id="gAgain" aria-label="Play again">🔁</button><button class="round" id="gHome" aria-label="Home">🏠</button></div>`);
+  setTimeout(()=>{showOverlay(`<div class="bigstars">${pic('Star')}</div><div class="big" style="font-size:48px">${title}</div>${stickerHTML(sticker)}
+    <div class="row"><button class="round" id="gAgain" aria-label="Play again">${pic('Repeat button')}</button><button class="round" id="gHome" aria-label="Home">${pic('House')}</button></div>`);
     $('gAgain').onclick=again;$('gHome').onclick=goHome;},900);
 }
 /* three answer choices around the right number, all between 1 and 10 */
@@ -97,7 +97,7 @@ function nextAbc(){
   $('aPrompt').textContent=`${it.id} is for …?`;
   const others=shuffle(LETS.filter(x=>x!==it)).slice(0,2).map(x=>rnd(startWords(x)));
   const opts=shuffle([right,...others]);
-  $('aPicks').innerHTML=opts.map((o,i)=>`<button class="pick" data-i="${i}" aria-label="${o.word}">${pic(o.pic,o.word)}<small>${o.word}</small></button>`).join('');
+  $('aPicks').innerHTML=opts.map((o,i)=>`<button class="pick" data-i="${i}" aria-label="${o.word}">${wordPic(o)}<small>${o.word}</small></button>`).join('');
   speak('q_'+it.id);
   $('aPicks').querySelectorAll('.pick').forEach(b=>b.onclick=()=>{
     if(!Ab)return;const o=opts[+b.dataset.i];
@@ -161,7 +161,7 @@ $('pSay').onclick=()=>{if(Pp)speak(findKey(Pp.target));};
 /* ---------- Sticker book ---------- */
 function openStickers(){
   show('stickers');const tot=totalStars(),own=stickersOwned();
-  $('sStars').textContent='⭐ '+tot;
+  $('sStars').innerHTML=pic('Star')+' '+tot;
   const need=3-(tot%3);
   $('sNext').textContent=own>=STICKERS.length?'Every sticker collected!':`${need} more star${need>1?'s':''} for a new sticker`;
   $('sMeter').style.width=(own>=STICKERS.length?100:((tot%3)/3*100))+'%';
@@ -181,23 +181,31 @@ function openParent(){
     <label for="pReps">Rows to practise before the next one <select id="pReps">${[1,2,3].map(n=>`<option value="${n}" ${n===(S.reps||2)?'selected':''}>${n}</option>`).join('')}</select></label>
     <label for="pSound">Sound effects <input type="checkbox" id="pSound" ${S.sound?'checked':''}></label>
     <p class="sub" style="text-align:left;font-size:15px">Stars: ${totalStars()} · Stickers: ${stickersOwned()}/${STICKERS.length}. Progress is saved on this phone.${window.CLIPS?'':' The recorded voice is still loading; the phone\'s own voice is used until then.'}</p>
-    <div class="row" style="flex-wrap:wrap"><button class="textbtn" id="pLines">Hear every voice line</button><button class="textbtn danger" id="pReset">Reset progress</button><button class="textbtn" id="pDone" style="background:var(--leaf);color:#fff">Done</button></div></div>`);
+    <div class="row" style="flex-wrap:wrap"><button class="textbtn" id="pLines">Hear every voice line</button><button class="textbtn" id="pCred">Photo credits</button><button class="textbtn danger" id="pReset">Reset progress</button><button class="textbtn" id="pDone" style="background:var(--leaf);color:#fff">Done</button></div></div>`);
   const keep=()=>{S.name=$('pName').value.trim();S.voice=$('pVoice').checked;S.phonics=$('pPhon').checked;S.sound=$('pSound').checked;S.reps=+$('pReps').value;save();};
   $('pDone').onclick=()=>{keep();goHome();};
   $('pLines').onclick=()=>{keep();openPhraseList();};
+  $('pCred').onclick=()=>{keep();openCredits();};
   $('pReset').onclick=()=>{if(confirm('Clear all stars and stickers on this phone?')){S.stars={};S.bonus=0;S.seen=0;save();goHome();}};
+}
+function openCredits(){
+  const c=CONTENT.photoCredits||[];
+  showOverlay(`<div class="big" style="font-size:28px">Photo credits</div><p class="sub" style="font-size:15px">Real photos are shared by their photographers under Creative Commons licences. Cartoon pictures: Microsoft Fluent Emoji (MIT). Voice: Microsoft neural voice Ezinne.</p>
+    <div class="phrases">${c.map(x=>`<div style="padding:8px 10px;border-radius:12px;background:var(--road);font-size:14px;text-align:left"><b>${escapeHTML(x.word)}</b>: ${escapeHTML(x.text)}</div>`).join('')}</div>
+    <div class="row"><button class="textbtn" id="crBack">Back</button></div>`);
+  $('crBack').onclick=openParent;
 }
 function openPhraseList(){
   const keys=Object.keys(PHRASES);
   showOverlay(`<div class="big" style="font-size:28px">Voice lines</div><p class="sub" style="font-size:15px">Tap a line to hear it. Tell Claude the ones that sound wrong.</p>
-    <div class="phrases">${keys.map(k=>`<button data-k="${k}">▶️ <span>${escapeHTML(PHRASES[k])}</span></button>`).join('')}</div>
+    <div class="phrases">${keys.map(k=>`<button data-k="${k}">${pic('Play button')} <span>${escapeHTML(PHRASES[k])}</span></button>`).join('')}</div>
     <div class="row"><button class="textbtn" id="plBack">Back</button></div>`);
   $('ovCard').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>speak(b.dataset.k));
   $('plBack').onclick=openParent;
 }
 
 /* the recorded voice is big, so it loads after the game is on screen */
-function loadVoice(){const s=document.createElement('script');s.src='voice.js';s.async=true;document.body.appendChild(s);}
+function loadVoice(){for(const f of ['photos.js','voice.js']){const s=document.createElement('script');s.src=f;s.async=true;document.body.appendChild(s);}}
 goHome();
 setTimeout(loadVoice,50);
 /* installed app: keep working offline (skipped where the page can't register one) */

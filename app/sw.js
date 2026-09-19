@@ -1,7 +1,7 @@
 /* Keeps Little Writer working offline once it has been opened. build.py stamps VERSION,
    so a new build replaces the old copy the next time the app is opened online. */
 const VERSION = "__VERSION__";
-const CORE = ["./", "index.html", "content.js", "voice.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
+const CORE = ["./", "index.html", "content.js", "voice.js", "photos.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

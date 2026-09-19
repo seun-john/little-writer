@@ -8,6 +8,12 @@ parts = sorted((ROOT / "parts").glob("*.html"))
 (ROOT / "index.html").write_text("".join(p.read_text(encoding="utf-8") for p in parts), encoding="utf-8")
 
 content = json.loads((ROOT / "content" / "content.json").read_text(encoding="utf-8"))
+# chosen real photos (tools/pick_photos.py) and their credits
+chosen = json.loads((ROOT / "content" / "photos.json").read_text(encoding="utf-8")) if (ROOT / "content" / "photos.json").exists() else {}
+content["photoCredits"] = [{"word": w, "text": c["credit"]} for w, c in chosen.items()]
+photos = {w: "data:image/webp;base64," + base64.b64encode((ROOT / "assets" / "photos" / f"{w}.webp").read_bytes()).decode()
+          for w in chosen if (ROOT / "assets" / "photos" / f"{w}.webp").exists()}
+(ROOT / "photos.js").write_text("window.PHOTOS=" + json.dumps(photos, separators=(",", ":")) + ";\n", encoding="utf-8")
 phrases = json.loads((ROOT / "assets" / "phrases.json").read_text(encoding="utf-8"))
 pics = {p.stem: "data:image/webp;base64," + base64.b64encode(p.read_bytes()).decode()
         for p in sorted((ROOT / "assets" / "pics").glob("*.webp"))}
@@ -24,7 +30,7 @@ clips = {k: "data:audio/mpeg;base64," + base64.b64encode((ROOT / "assets" / "aud
 import hashlib, shutil
 site = ROOT / "docs"
 site.mkdir(exist_ok=True)
-for f in ("index.html", "content.js", "voice.js"):
+for f in ("index.html", "content.js", "voice.js", "photos.js"):
     shutil.copy(ROOT / f, site / f)
 for f in (ROOT / "app").iterdir():
     if f.name != "sw.js":
@@ -33,6 +39,6 @@ version = hashlib.sha1(b"".join((site / f).read_bytes() for f in ("index.html", 
 (site / "sw.js").write_text((ROOT / "app" / "sw.js").read_text(encoding="utf-8").replace("__VERSION__", "lw-" + version), encoding="utf-8")
 (site / ".nojekyll").write_text("")
 
-for f in ("index.html", "content.js", "voice.js"):
+for f in ("index.html", "content.js", "voice.js", "photos.js"):
     print(f"{f}: {(ROOT / f).stat().st_size / 1e6:.2f} MB")
-print(f"{len(pics)} pictures, {len(clips)}/{len(phrases)} voice clips")
+print(f"{len(pics)} pictures, {len(photos)} photos, {len(clips)}/{len(phrases)} voice clips")
